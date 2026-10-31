@@ -28,14 +28,12 @@ Anh Minh là lập trình viên tự do, mới thành lập Công ty TNHH Một 
 - Kết quả AI cần có nguồn dữ liệu, trạng thái xử lý và khả năng truy vết.
 
 ## 6. Thành viên và vai trò
-| Tên | Vai trò | Trách nhiệm chính |
-| ... | ... | ... |
-| Thủy | BA / Full-stack Lead | Phân tích nghiệp vụ, SRS, điều phối và tích hợp |
-| Quỳnh | Backend Business | Khách hàng, báo giá, hợp đồng, hóa đơn, công nợ phải thu |
-| Tiến | Backend Ledger | Thu chi, thanh toán, đối chiếu ngân hàng, sổ sách |
-| Đạt | Frontend / Mobile | Giao diện web/di động và màn hình duyệt AI |
-| Trà | AI Engineer | Đọc hóa đơn, trích xuất dữ liệu, phân loại chi phí, Agent |
-| Vy | QA / DevOps / Security | Kiểm thử, môi trường, CI/CD, bảo mật và nhật ký |
+- Thủy(BA / Full-stack Lead): Phân tích nghiệp vụ, SRS, điều phối và tích hợp.
+- Quỳnh(Backend Business): Khách hàng, báo giá, hợp đồng, hóa đơn, công nợ phải thu. 
+- Tiến(Backend Ledger): Thu chi, thanh toán, đối chiếu ngân hàng, sổ sách.
+- Đạt(Frontend / Mobile): Giao diện web/di động và màn hình duyệt AI.
+- Trà(AI Engineer): Đọc hóa đơn, trích xuất dữ liệu, phân loại chi phí, Agent.
+- Vy(QA / DevOps / Security): Kiểm thử, môi trường, CI/CD, bảo mật và nhật ký.
 
 ## 7. Công nghệ dự kiến
 Công nghệ trong README là đề xuất ban đầu, cần nhóm thống nhất trước khi chốt:
