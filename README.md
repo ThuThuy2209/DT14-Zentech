@@ -32,8 +32,8 @@ Anh Minh là lập trình viên tự do, mới thành lập Công ty TNHH Một 
 - Quỳnh(Backend Business): Khách hàng, báo giá, hợp đồng, hóa đơn, công nợ phải thu. 
 - Tiến(Backend Ledger): Thu chi, thanh toán, đối chiếu ngân hàng, sổ sách.
 - Đạt(Frontend / Mobile): Giao diện web/di động và màn hình duyệt AI.
-- Trà(AI Engineer): Đọc hóa đơn, trích xuất dữ liệu, phân loại chi phí, Agent.
-- Vy(QA / DevOps / Security): Kiểm thử, môi trường, CI/CD, bảo mật và nhật ký.
+- Vy(AI Engineer): Đọc hóa đơn, trích xuất dữ liệu, phân loại chi phí, Agent.
+- Trà(QA / DevOps / Security): Kiểm thử, môi trường, CI/CD, bảo mật và nhật ký.
 
 ## 7. Công nghệ dự kiến
 Công nghệ trong README là đề xuất ban đầu, cần nhóm thống nhất trước khi chốt:
