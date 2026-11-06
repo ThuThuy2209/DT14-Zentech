@@ -1,0 +1,55 @@
+# Root gitignore for DT14-Zentech Monorepo
+
+# Dependencies
+node_modules/
+*/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Production builds
+dist/
+*/dist/
+build/
+*/build/
+out/
+.next/
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+*.env
+!.env.example
+!*.env.example
+
+# Python / AI service
+__pycache__/
+*/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Logs & temp
+logs/
+*.log
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDEs
+.idea/
+*.swp
+*.swo
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
