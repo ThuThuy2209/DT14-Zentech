@@ -40,7 +40,11 @@ Công nghệ trong README là đề xuất ban đầu, cần nhóm thống nhấ
 - Backend: ASP.NET Core hoặc NestJS hoặc Spring Boot.
 - Database: PostgreSQL hoặc SQL Server.
 - Frontend: React + TypeScript.
-- AI Service: Python + FastAPI; OCR và mô hình/API AI phù hợp.
+- AI Service:(Port 5000)
+  * Core framework: Python 3.11 + FastAPI + Uvicorn
+  * OCR / Parse chứng từ: pdfplumber (đọc PDF vector) + PaddleOCR (xử lý ảnh scan/ảnh chụp)
+  * AI Model / LLM: Google Gemini API (Gemini 1.5 Flash / Pro) qua LangChain / google-genai
+  * Định dạng & Kiểm định: Pydantic (Structured JSON Output), scikit-learn & Pandas (Đánh giá chỉ số F1-Score)
 - DevOps: Docker, GitHub Actions.
 
 ## 8. Kết quả mong đợi
