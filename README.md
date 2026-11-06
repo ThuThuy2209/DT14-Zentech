@@ -39,7 +39,7 @@ Anh Minh là lập trình viên tự do, mới thành lập Công ty TNHH Một 
 Công nghệ trong README là đề xuất ban đầu, cần nhóm thống nhất trước khi chốt:
 - Backend: ASP.NET Core hoặc NestJS hoặc Spring Boot.
 - Database: PostgreSQL hoặc SQL Server.
-- Frontend: React + TypeScript hoặc Vue + TypeScript.
+- Frontend: React + TypeScript.
 - AI Service: Python + FastAPI; OCR và mô hình/API AI phù hợp.
 - DevOps: Docker, GitHub Actions.
 
