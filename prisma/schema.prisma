@@ -1,0 +1,628 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// 1. TÀI KHOẢN & DOANH NGHIỆP
+
+model User {
+  id           Int      @id @default(autoincrement()) @map("user_id")
+  username     String   @unique @db.VarChar(100)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  email        String   @unique @db.VarChar(150)
+  fullName     String   @map("full_name") @db.VarChar(150)
+  status       String   @default("ACTIVE") @db.VarChar(30)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Quan hệ
+  uploadedDocuments        Document[]           @relation("UploadedByUser")
+  importedBankStatements   BankStatement[]      @relation("ImportedByUser")
+  confirmedReconciliations BankReconciliation[] @relation("ConfirmedByUser")
+  reviewedApprovals        ApprovalRequest[]    @relation("ReviewedByUser")
+  notifications            Notification[]
+  activityLogs             ActivityLog[]
+  aiInteractions           AiInteraction[]
+
+  @@map("users")
+}
+
+model Company {
+  id             Int      @id @default(autoincrement()) @map("company_id")
+  companyName    String   @map("company_name") @db.VarChar(255)
+  taxCode        String   @map("tax_code") @db.VarChar(50)
+  address        String?  @db.Text
+  email          String?  @db.VarChar(150)
+  phone          String?  @db.VarChar(30)
+  representative String?  @db.VarChar(150)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("companies")
+}
+
+// 2. KHÁCH HÀNG & DỊCH VỤ
+
+model Customer {
+  id            Int      @id @default(autoincrement()) @map("customer_id")
+  customerName  String   @map("customer_name") @db.VarChar(255)
+  taxCode       String?  @map("tax_code") @db.VarChar(50)
+  address       String?  @db.Text
+  email         String?  @db.VarChar(150)
+  phone         String?  @db.VarChar(30)
+  contactPerson String?  @map("contact_person") @db.VarChar(150)
+  status        String   @default("ACTIVE") @db.VarChar(30)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Quan hệ
+  quotations    Quotation[]
+  contracts     Contract[]
+  salesInvoices SalesInvoice[]
+
+  @@map("customers")
+}
+
+model Service {
+  id          Int      @id @default(autoincrement()) @map("service_id")
+  serviceName String   @map("service_name") @db.VarChar(255)
+  description String?  @db.Text
+  unit        String?  @db.VarChar(50)
+  unitPrice   Decimal  @map("unit_price") @db.Decimal(15, 2)
+  status      String   @default("ACTIVE") @db.VarChar(30)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Quan hệ
+  quotationItems QuotationItem[]
+
+  @@map("services")
+}
+
+// 3. EMAIL & TÀI LIỆU (DOCUMENTS)
+
+model EmailAccount {
+  id                  Int       @id @default(autoincrement()) @map("email_account_id")
+  emailAddress        String    @map("email_address") @db.VarChar(150)
+  provider            String    @db.VarChar(100)
+  connectionStatus    String    @map("connection_status") @db.VarChar(30)
+  credentialReference String?   @map("credential_reference") @db.VarChar(255)
+  lastSyncAt          DateTime? @map("last_sync_at")
+
+  // Quan hệ
+  messages EmailMessage[]
+
+  @@map("email_accounts")
+}
+
+model EmailMessage {
+  id                Int      @id @default(autoincrement()) @map("email_message_id")
+  emailAccountId    Int      @map("email_account_id")
+  externalMessageId String?  @map("external_message_id") @db.VarChar(255)
+  sender            String   @db.VarChar(255)
+  recipient         String   @db.VarChar(255)
+  subject           String?  @db.VarChar(500)
+  body              String?  @db.Text
+  receivedAt        DateTime @map("received_at")
+  category          String?  @db.VarChar(50)
+  syncStatus        String   @map("sync_status") @db.VarChar(30)
+
+  // Quan hệ
+  emailAccount     EmailAccount      @relation(fields: [emailAccountId], references: [id])
+  attachments      EmailAttachment[]
+  documents        Document[]
+  purchaseInvoices PurchaseInvoice[]
+
+  @@map("email_messages")
+}
+
+model EmailAttachment {
+  id        Int      @id @default(autoincrement()) @map("attachment_id")
+  emailId   Int      @map("email_id")
+  fileName  String   @map("file_name") @db.VarChar(255)
+  fileType  String?  @map("file_type") @db.VarChar(100)
+  filePath  String   @map("file_path") @db.Text
+  fileSize  Int?     @map("file_size")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Quan hệ
+  emailMessage EmailMessage @relation(fields: [emailId], references: [id], onDelete: Cascade)
+
+  @@map("email_attachments")
+}
+
+model Document {
+  id             Int      @id @default(autoincrement()) @map("document_id")
+  documentName   String   @map("document_name") @db.VarChar(255)
+  filePath       String   @map("file_path") @db.VarChar(500)
+  fileType       String?  @map("file_type") @db.VarChar(50)
+  fileSize       BigInt?  @map("file_size")
+  documentType   String?  @map("document_type") @db.VarChar(50)
+  uploadedAt     DateTime @default(now()) @map("uploaded_at")
+  uploadedBy     Int?     @map("uploaded_by")
+  emailMessageId Int?     @map("email_message_id")
+
+  // Quan hệ
+  uploader               User?                      @relation("UploadedByUser", fields: [uploadedBy], references: [id])
+  emailMessage           EmailMessage?              @relation(fields: [emailMessageId], references: [id])
+  purchaseInvoices       PurchaseInvoice[]
+  contracts              Contract[]
+  signedContractRequests ContractSignatureRequest[]
+  acceptanceRecords      AcceptanceRecord[]
+  salesInvoices          SalesInvoice[]
+  expenses               Expense[]
+  legalObligationPeriods LegalObligationPeriod[]
+
+  @@map("documents")
+}
+
+// 4. HÓA ĐƠN ĐẦU VÀO (PURCHASE INVOICES)
+
+model PurchaseInvoice {
+  id                Int       @id @default(autoincrement()) @map("purchase_invoice_id")
+  supplierName      String    @map("supplier_name") @db.VarChar(200)
+  emailMessageId    Int?      @map("email_message_id")
+  invoiceNumber     String?   @map("invoice_number") @db.VarChar(100)
+  sellerTaxCode     String?   @map("seller_tax_code") @db.VarChar(50)
+  buyerTaxCode      String?   @map("buyer_tax_code") @db.VarChar(50)
+  invoiceDate       DateTime? @map("invoice_date") @db.Date
+  dueDate           DateTime? @map("due_date") @db.Date
+  totalAmount       Decimal   @map("total_amount") @db.Decimal(15, 2)
+  paidAmount        Decimal   @default(0) @map("paid_amount") @db.Decimal(18, 2)
+  outstandingAmount Decimal   @default(0) @map("outstanding_amount") @db.Decimal(18, 2)
+  duplicateStatus   String?   @map("duplicate_status") @db.VarChar(30)
+  buyerTaxStatus    String?   @map("buyer_tax_status") @db.VarChar(30)
+  ocrStatus         String?   @map("ocr_status") @db.VarChar(30)
+  paymentStatus     String?   @map("payment_status") @db.VarChar(30)
+  documentId        Int?      @map("document_id")
+
+  // Quan hệ
+  emailMessage        EmailMessage?        @relation(fields: [emailMessageId], references: [id])
+  document            Document?            @relation(fields: [documentId], references: [id])
+  bankReconciliations BankReconciliation[]
+
+  @@map("purchase_invoices")
+}
+
+// 5. BÁO GIÁ (QUOTATIONS)
+
+model Quotation {
+  id             Int       @id @default(autoincrement()) @map("quotation_id")
+  quotationCode  String    @unique @map("quotation_code") @db.VarChar(50)
+  customerId     Int       @map("customer_id")
+  createdDate    DateTime  @map("created_date") @db.Date
+  validUntil     DateTime? @map("valid_until") @db.Date
+  subtotal       Decimal   @map("subtotal") @db.Decimal(15, 2)
+  discountAmount Decimal   @default(0) @map("discount_amount") @db.Decimal(15, 2)
+  taxAmount      Decimal   @default(0) @map("tax_amount") @db.Decimal(15, 2)
+  totalAmount    Decimal   @map("total_amount") @db.Decimal(15, 2)
+  status         String    @default("DRAFT") @db.VarChar(30)
+  note           String?   @db.Text
+
+  // Quan hệ
+  customer Customer        @relation(fields: [customerId], references: [id])
+  items    QuotationItem[]
+  contract Contract?
+
+  @@map("quotations")
+}
+
+model QuotationItem {
+  id             Int      @id @default(autoincrement()) @map("quotation_item_id")
+  quotationId    Int      @map("quotation_id")
+  serviceId      Int?     @map("service_id")
+  description    String?  @db.Text
+  quantity       Decimal  @map("quantity") @db.Decimal(12, 2)
+  unitPrice      Decimal  @map("unit_price") @db.Decimal(15, 2)
+  discountAmount Decimal  @default(0) @map("discount_amount") @db.Decimal(15, 2)
+  taxRate        Decimal? @map("tax_rate") @db.Decimal(5, 2)
+  lineTotal      Decimal  @map("line_total") @db.Decimal(15, 2)
+
+  // Quan hệ
+  quotation Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  service   Service?  @relation(fields: [serviceId], references: [id])
+
+  @@map("quotation_items")
+}
+
+// 6. MẪU HỢP ĐỒNG & HỢP ĐỒNG (CONTRACTS)
+
+model ContractTemplate {
+  id           Int      @id @default(autoincrement()) @map("template_id")
+  templateName String   @map("template_name") @db.VarChar(255)
+  description  String?  @db.Text
+  status       String   @default("ACTIVE") @db.VarChar(30)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Quan hệ
+  versions ContractTemplateVersion[]
+
+  @@map("contract_templates")
+}
+
+model ContractTemplateVersion {
+  id                Int      @id @default(autoincrement()) @map("template_version_id")
+  templateId        Int      @map("template_id")
+  versionNumber     Int      @map("version_number")
+  content           String   @db.Text
+  placeholderConfig Json?    @map("placeholder_config")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  // Quan hệ
+  template  ContractTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  contracts Contract[]
+
+  @@map("contract_template_versions")
+}
+
+model Contract {
+  id                Int       @id @default(autoincrement()) @map("contract_id")
+  contractCode      String    @unique @map("contract_code") @db.VarChar(50)
+  quotationId       Int?      @unique @map("quotation_id")
+  customerId        Int       @map("customer_id")
+  templateVersionId Int?      @map("template_version_id")
+  contractName      String    @map("contract_name") @db.VarChar(255)
+  contractValue     Decimal   @map("contract_value") @db.Decimal(15, 2)
+  startDate         DateTime? @map("start_date") @db.Date
+  endDate           DateTime? @map("end_date") @db.Date
+  contractContent   String?   @map("contract_content") @db.Text
+  status            String    @default("DRAFT") @db.VarChar(30)
+  createdAt         DateTime  @default(now()) @map("created_at")
+  documentId        Int?      @map("document_id")
+
+  // Quan hệ
+  quotation         Quotation?                 @relation(fields: [quotationId], references: [id])
+  customer          Customer                   @relation(fields: [customerId], references: [id])
+  templateVersion   ContractTemplateVersion?   @relation(fields: [templateVersionId], references: [id])
+  document          Document?                  @relation(fields: [documentId], references: [id])
+  signers           ContractSigner[]
+  signatureRequests ContractSignatureRequest[]
+  acceptanceRecords AcceptanceRecord[]
+  salesInvoices     SalesInvoice[]
+
+  @@map("contracts")
+}
+
+model ContractSigner {
+  id            Int     @id @default(autoincrement()) @map("signer_id")
+  contractId    Int     @map("contract_id")
+  signerName    String  @map("signer_name") @db.VarChar(255)
+  signerEmail   String  @map("signer_email") @db.VarChar(150)
+  signerRole    String? @map("signer_role") @db.VarChar(100)
+  signingOrder  Int?    @map("signing_order")
+  signingStatus String  @default("PENDING") @map("signing_status") @db.VarChar(30)
+
+  // Quan hệ
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("contract_signers")
+}
+
+model ContractSignatureRequest {
+  id               Int       @id @default(autoincrement()) @map("signature_request_id")
+  contractId       Int       @map("contract_id")
+  transactionId    String?   @map("transaction_id") @db.VarChar(255)
+  requestStatus    String    @map("request_status") @db.VarChar(30)
+  sentAt           DateTime  @map("sent_at")
+  completedAt      DateTime? @map("completed_at")
+  errorMessage     String?   @map("error_message") @db.Text
+  signedDocumentId Int?      @map("signed_document_id")
+
+  // Quan hệ
+  contract       Contract            @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  signedDocument Document?           @relation(fields: [signedDocumentId], references: [id])
+  events         ContractSignEvent[]
+
+  @@map("contract_signature_requests")
+}
+
+model ContractSignEvent {
+  id                 Int      @id @default(autoincrement()) @map("sign_event_id")
+  signatureRequestId Int      @map("signature_request_id")
+  eventType          String   @map("event_type") @db.VarChar(100)
+  eventStatus        String   @map("event_status") @db.VarChar(30)
+  eventMessage       String?  @map("event_message") @db.Text
+  eventTime          DateTime @map("event_time")
+
+  // Quan hệ
+  signatureRequest ContractSignatureRequest @relation(fields: [signatureRequestId], references: [id], onDelete: Cascade)
+
+  @@map("contract_sign_events")
+}
+
+// 7. NGHIỆM THU (ACCEPTANCE RECORDS)
+
+model AcceptanceRecord {
+  id                 Int      @id @default(autoincrement()) @map("acceptance_id")
+  contractId         Int      @map("contract_id")
+  acceptanceCode     String   @unique @map("acceptance_code") @db.VarChar(50)
+  acceptanceDate     DateTime @map("acceptance_date") @db.Date
+  content            String?  @db.Text
+  result             String   @db.VarChar(30)
+  issues             String?  @db.Text
+  evidenceDocumentId Int?     @map("evidence_document_id")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  // Quan hệ
+  contract         Contract       @relation(fields: [contractId], references: [id])
+  evidenceDocument Document?      @relation(fields: [evidenceDocumentId], references: [id])
+  salesInvoices    SalesInvoice[]
+
+  @@map("acceptance_records")
+}
+
+// 8. HÓA ĐƠN ĐẦU RA (SALES INVOICES) & THANH TOÁN
+
+model SalesInvoice {
+  id                Int       @id @default(autoincrement()) @map("sales_invoice_id")
+  invoiceNumber     String    @unique @map("invoice_number") @db.VarChar(100)
+  customerId        Int       @map("customer_id")
+  contractId        Int?      @map("contract_id")
+  acceptanceId      Int?      @map("acceptance_id")
+  invoiceDate       DateTime  @map("invoice_date") @db.Date
+  dueDate           DateTime? @map("due_date") @db.Date
+  subtotal          Decimal   @map("subtotal") @db.Decimal(15, 2)
+  taxAmount         Decimal   @default(0) @map("tax_amount") @db.Decimal(15, 2)
+  totalAmount       Decimal   @map("total_amount") @db.Decimal(15, 2)
+  invoiceStatus     String    @default("DRAFT") @map("invoice_status") @db.VarChar(30)
+  documentId        Int?      @map("document_id")
+  outstandingAmount Decimal   @default(0) @map("outstanding_amount") @db.Decimal(18, 2)
+  paymentStatus     String    @default("UNPAID") @map("payment_status") @db.VarChar(30)
+  paidAmount        Decimal   @default(0) @map("paid_amount") @db.Decimal(18, 2)
+  issueDate         DateTime? @map("issue_date") @db.Date
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  // Quan hệ
+  customer            Customer             @relation(fields: [customerId], references: [id])
+  contract            Contract?            @relation(fields: [contractId], references: [id])
+  acceptanceRecord    AcceptanceRecord?    @relation(fields: [acceptanceId], references: [id])
+  document            Document?            @relation(fields: [documentId], references: [id])
+  payments            Payment[]
+  bankReconciliations BankReconciliation[]
+
+  @@map("sales_invoices")
+}
+
+model Payment {
+  id                   Int      @id @default(autoincrement()) @map("payment_id")
+  salesInvoiceId       Int      @map("sales_invoice_id")
+  paymentDate          DateTime @map("payment_date") @db.Date
+  amount               Decimal  @map("amount") @db.Decimal(15, 2)
+  paymentMethod        String?  @map("payment_method") @db.VarChar(50)
+  transactionReference String?  @map("transaction_reference") @db.VarChar(100)
+  paymentStatus        String   @map("payment_status") @db.VarChar(30)
+  note                 String?  @db.Text
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  // Quan hệ
+  salesInvoice SalesInvoice @relation(fields: [salesInvoiceId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+// 9. NGÂN HÀNG & ĐỐI CHIẾU & CHI PHÍ
+
+model BankAccount {
+  id            Int    @id @default(autoincrement()) @map("account_id")
+  bankName      String @map("bank_name") @db.VarChar(150)
+  accountNumber String @unique @map("account_number") @db.VarChar(50)
+  accountHolder String @map("account_holder") @db.VarChar(150)
+  currency      String @default("VND") @db.VarChar(10)
+  status        String @default("ACTIVE") @db.VarChar(30)
+
+  // Quan hệ
+  statements BankStatement[]
+
+  @@map("bank_accounts")
+}
+
+model BankStatement {
+  id           Int      @id @default(autoincrement()) @map("statement_id")
+  accountId    Int      @map("account_id")
+  fileName     String   @map("file_name") @db.VarChar(255)
+  periodStart  DateTime @map("period_start") @db.Date
+  periodEnd    DateTime @map("period_end") @db.Date
+  importedAt   DateTime @default(now()) @map("imported_at")
+  importedBy   Int?     @map("imported_by")
+  fileHash     String?  @map("file_hash") @db.VarChar(255)
+  importStatus String   @map("import_status") @db.VarChar(30)
+
+  // Quan hệ
+  bankAccount  BankAccount       @relation(fields: [accountId], references: [id])
+  importer     User?             @relation("ImportedByUser", fields: [importedBy], references: [id])
+  transactions BankTransaction[]
+
+  @@map("bank_statements")
+}
+
+model BankTransaction {
+  id                    Int      @id @default(autoincrement()) @map("transaction_id")
+  statementId           Int      @map("statement_id")
+  externalTransactionId String?  @map("external_transaction_id") @db.VarChar(100)
+  transactionDate       DateTime @map("transaction_date")
+  description           String?  @db.Text
+  debitAmount           Decimal  @default(0) @map("debit_amount") @db.Decimal(18, 2)
+  creditAmount          Decimal  @default(0) @map("credit_amount") @db.Decimal(18, 2)
+  balanceAfter          Decimal? @map("balance_after") @db.Decimal(18, 2)
+  referenceCode         String?  @map("reference_code") @db.VarChar(100)
+  duplicateStatus       String?  @map("duplicate_status") @db.VarChar(30)
+  reconciliationStatus  String   @default("UNRECONCILED") @map("reconciliation_status") @db.VarChar(30)
+
+  // Quan hệ
+  statement       BankStatement        @relation(fields: [statementId], references: [id], onDelete: Cascade)
+  reconciliations BankReconciliation[]
+
+  @@map("bank_transactions")
+}
+
+model BankReconciliation {
+  id                Int       @id @default(autoincrement()) @map("reconciliation_id")
+  transactionId     Int       @map("transaction_id")
+  salesInvoiceId    Int?      @map("sales_invoice_id")
+  purchaseInvoiceId Int?      @map("purchase_invoice_id")
+  expenseId         Int?      @map("expense_id")
+  matchedAmount     Decimal   @map("matched_amount") @db.Decimal(18, 2)
+  matchStatus       String    @map("match_status") @db.VarChar(30)
+  confirmedBy       Int?      @map("confirmed_by")
+  confirmedAt       DateTime? @map("confirmed_at")
+  notes             String?   @db.Text
+
+  // Quan hệ
+  transaction     BankTransaction  @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  salesInvoice    SalesInvoice?    @relation(fields: [salesInvoiceId], references: [id])
+  purchaseInvoice PurchaseInvoice? @relation(fields: [purchaseInvoiceId], references: [id])
+  expense         Expense?         @relation(fields: [expenseId], references: [id])
+  confirmer       User?            @relation("ConfirmedByUser", fields: [confirmedBy], references: [id])
+
+  @@map("bank_reconciliations")
+}
+
+model Expense {
+  id          Int       @id @default(autoincrement()) @map("expense_id")
+  category    String    @db.VarChar(100)
+  description String?   @db.Text
+  amount      Decimal   @map("amount") @db.Decimal(18, 2)
+  expenseDate DateTime  @map("expense_date") @db.Date
+  dueDate     DateTime? @map("due_date") @db.Date
+  status      String    @map("status") @db.VarChar(30)
+  documentId  Int?      @map("document_id")
+
+  // Quan hệ
+  document            Document?            @relation(fields: [documentId], references: [id])
+  bankReconciliations BankReconciliation[]
+
+  @@map("expenses")
+}
+
+// 10. NGHĨA VỤ PHÁP LÝ (LEGAL OBLIGATIONS)
+
+model LegalObligationType {
+  id             Int     @id @default(autoincrement()) @map("obligation_type_id")
+  typeName       String  @map("type_name") @db.VarChar(150)
+  description    String? @db.Text
+  occurrenceType String? @map("occurrence_type") @db.VarChar(30)
+  isActive       Boolean @default(true) @map("is_active")
+
+  @@map("legal_obligation_types")
+}
+
+model LegalObligation {
+  id             Int     @id @default(autoincrement()) @map("obligation_id")
+  obligationName String  @map("obligation_name") @db.VarChar(255)
+  obligationType String? @map("obligation_type") @db.VarChar(50)
+  frequencyType  String? @map("frequency_type") @db.VarChar(30)
+  description    String? @db.Text
+  legalBasis     String? @map("legal_basis") @db.Text
+  sourceUrl      String? @map("source_url") @db.VarChar(500)
+  applicability  String? @default("APPLICABLE") @map("applicability") @db.VarChar(30)
+  status         String  @default("ACTIVE") @db.VarChar(30)
+
+  // Quan hệ
+  periods LegalObligationPeriod[]
+
+  @@map("legal_obligations")
+}
+
+model LegalObligationPeriod {
+  id                 Int       @id @default(autoincrement()) @map("obligation_period_id")
+  obligationId       Int       @map("obligation_id")
+  periodName         String    @map("period_name") @db.VarChar(100)
+  startDate          DateTime? @map("start_date") @db.Date
+  dueDate            DateTime  @map("due_date") @db.Date
+  completedDate      DateTime? @map("completed_date") @db.Date
+  status             String    @default("PENDING") @db.VarChar(30)
+  evidenceDocumentId Int?      @map("evidence_document_id")
+  note               String?   @db.Text
+
+  // Quan hệ
+  obligation       LegalObligation @relation(fields: [obligationId], references: [id], onDelete: Cascade)
+  evidenceDocument Document?       @relation(fields: [evidenceDocumentId], references: [id])
+
+  @@map("legal_obligation_periods")
+}
+
+// 11. PHÊ DUYỆT, EMAIL LOGS, THÔNG BÁO & NHẬT KÝ
+
+model ApprovalRequest {
+  id              Int       @id @default(autoincrement()) @map("approval_id")
+  approvalType    String    @map("approval_type") @db.VarChar(50)
+  referenceId     Int?      @map("reference_id")
+  title           String    @db.VarChar(255)
+  content         String?   @db.Text
+  status          String    @default("PENDING") @db.VarChar(30)
+  reviewedBy      Int?      @map("reviewed_by")
+  reviewedAt      DateTime? @map("reviewed_at")
+  rejectionReason String?   @map("rejection_reason") @db.Text
+
+  // Quan hệ
+  reviewer  User?      @relation("ReviewedByUser", fields: [reviewedBy], references: [id])
+  emailLogs EmailLog[]
+
+  @@map("approval_requests")
+}
+
+model EmailLog {
+  id           Int       @id @default(autoincrement()) @map("email_log_id")
+  approvalId   Int?      @map("approval_id")
+  recipient    String    @db.VarChar(255)
+  subject      String?   @db.VarChar(500)
+  content      String?   @db.Text
+  sentAt       DateTime? @map("sent_at")
+  sendStatus   String    @map("send_status") @db.VarChar(30)
+  errorMessage String?   @map("error_message") @db.Text
+
+  // Quan hệ
+  approvalRequest ApprovalRequest? @relation(fields: [approvalId], references: [id])
+
+  @@map("email_logs")
+}
+
+model Notification {
+  id               Int      @id @default(autoincrement()) @map("notification_id")
+  userId           Int      @map("user_id")
+  title            String   @db.VarChar(255)
+  content          String?  @db.Text
+  notificationType String?  @map("notification_type") @db.VarChar(50)
+  referenceId      Int?     @map("reference_id")
+  isRead           Boolean  @default(false) @map("is_read")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Quan hệ
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id          Int      @id @default(autoincrement()) @map("activity_log_id")
+  userId      Int?     @map("user_id")
+  action      String   @db.VarChar(100)
+  entityType  String?  @map("entity_type") @db.VarChar(100)
+  entityId    Int?     @map("entity_id")
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Quan hệ
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("activity_logs")
+}
+
+model AiInteraction {
+  id              Int      @id @default(autoincrement()) @map("ai_interaction_id")
+  userId          Int?     @map("user_id")
+  interactionType String?  @map("interaction_type") @db.VarChar(50)
+  inputContent    String?  @map("input_content") @db.Text
+  outputContent   String?  @map("output_content") @db.Text
+  sourceReference String?  @map("source_reference") @db.Text
+  status          String   @default("SUCCESS") @db.VarChar(30)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Quan hệ
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("ai_interactions")
+}
