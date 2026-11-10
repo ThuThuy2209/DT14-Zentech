@@ -14,3 +14,4 @@ EXPOSE 8080
 
 # Chạy ở chế độ dev (có hot-reload)
 CMD ["npm", "run", "start:dev"]
+
