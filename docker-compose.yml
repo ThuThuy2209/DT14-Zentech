@@ -19,9 +19,34 @@ services:
       TZ: Asia/Ho_Chi_Minh
       PGTZ: Asia/Ho_Chi_Minh
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+  
+  #  Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: opc_backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 8080
+
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${DATABASE_USER:?Set DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD}
+      DATABASE_NAME: ${DATABASE_NAME:?Set DATABASE_NAME}
+      DATABASE_URL: "postgresql://${DATABASE_USER:?Set DATABASE_USER}:${DATABASE_PASSWORD:?Set DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME:?Set DATABASE_NAME}?schema=public"
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - opc_network
+
 
 # 3. Khai báo mạng
 networks:
