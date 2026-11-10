@@ -8,6 +8,7 @@ x-common: &common
 
 # 2. Khai báo các container
 services:
+  # --- POSTGRESQL ---
   postgres:
     <<: *common
     image: postgres:16.10-alpine
@@ -22,6 +23,50 @@ services:
       - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+
+  # --- BACKEND (Node.js / Express) ---
+  backend:
+    <<: *common
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: opc_backend
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${DATABASE_USER:?Set DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD}
+      DATABASE_NAME: ${DATABASE_NAME:?Set DATABASE_NAME}
+      DATABASE_URL: "postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}?schema=public"
+
+      PORT: 8080
+      TZ: Asia/Ho_Chi_Minh
+
+  # --- FRONTEND (React / Vite) ---
+  frontend:
+    <<: *common
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: opc_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    env_file:
+      - ./frontend/.env
 
 # 3. Khai báo mạng
 networks:
