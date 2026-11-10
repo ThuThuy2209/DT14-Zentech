@@ -1,0 +1,36 @@
+name: opc-smartoffice
+
+# 1. Khuôn mẫu dùng chung cho các service
+x-common: &common
+  restart: unless-stopped
+  networks:
+    - opc_network
+
+# 2. Khai báo các container
+services:
+  postgres:
+    <<: *common
+    image: postgres:16.10-alpine
+    container_name: opc_postgres
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:?Set DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER:?Set DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD}
+      TZ: Asia/Ho_Chi_Minh
+      PGTZ: Asia/Ho_Chi_Minh
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+# 3. Khai báo mạng
+networks:
+  opc_network:
+    driver: bridge
+    name: opc_smartoffice_network
+
+# 4. Khai báo volume lưu dữ liệu
+volumes:
+  pgdata:
+    driver: local
+    name: opc_postgres_data
