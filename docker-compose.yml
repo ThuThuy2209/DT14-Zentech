@@ -8,6 +8,7 @@ x-common: &common
 
 # 2. Khai báo các container
 services:
+  # --- POSTGRESQL ---
   postgres:
     <<: *common
     image: postgres:16.10-alpine
@@ -47,6 +48,23 @@ services:
     networks:
       - opc_network
 
+
+  # --- FRONTEND (React / Vite) ---
+  frontend:
+    <<: *common
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: opc_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    env_file:
+      - ./frontend/.env
 
 # 3. Khai báo mạng
 networks:

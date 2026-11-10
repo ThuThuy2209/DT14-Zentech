@@ -1,27 +1,17 @@
-# NestJS 12 + Node.js + Prisma 7
-
-FROM node:22-bookworm-slim
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files
+# Copy package.json và cài thư viện
 COPY package*.json ./
+RUN npm install
 
-# Install dependencies
-RUN npm ci
-
-# Copy backend source
+# Copy toàn bộ code
 COPY . .
 
-# Build NestJS
-RUN npm run build
-
-# Production environment
-ENV NODE_ENV=production
-ENV PORT=8080
-
-# Backend API port
+# Mở cổng kết nối
 EXPOSE 8080
 
-# Start backend
-CMD ["npm", "run", "start:prod"]
+# Chạy ở chế độ dev (có hot-reload)
+CMD ["npm", "run", "start:dev"]
+

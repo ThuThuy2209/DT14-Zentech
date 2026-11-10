@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 node_modules
 dist
@@ -7,3 +8,8 @@ dist
 !.env.example
 coverage
 npm-debug.log
+=======
+node_modules
+dist
+.git
+>>>>>>> origin/develop
