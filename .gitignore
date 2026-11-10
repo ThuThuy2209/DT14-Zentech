@@ -55,3 +55,9 @@ desktop.ini
 !.vscode/extensions.json
 
 /generated/prisma
+
+
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
