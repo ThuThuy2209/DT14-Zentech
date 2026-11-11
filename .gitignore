@@ -1,5 +1,3 @@
-# Root gitignore for DT14-Zentech Monorepo
-
 # Dependencies
 node_modules/
 */node_modules/
@@ -54,9 +52,11 @@ desktop.ini
 !.vscode/settings.json
 !.vscode/extensions.json
 
-/generated/prisma
+# Prisma generated client
+**/generated/prisma/
+generated/
 
-
+# AI Coding Agents & Tools
 .agents/
 .claude/
 .windsurf/
