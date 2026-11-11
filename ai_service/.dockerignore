@@ -1,0 +1,13 @@
+
+__pycache__
+*.py[cod]
+.pytest_cache
+.env
+.venv
+venv
+.git
+.vscode
+*.pdf
+*.jpg
+*.jpeg
+*.png
