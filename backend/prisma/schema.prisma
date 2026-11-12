@@ -1,7 +1,6 @@
 generator client {
-  provider     = "prisma-client-js"
-  output       = "../src/generated/prisma"
-  moduleFormat = "cjs"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -499,28 +498,32 @@ model Expense {
 // 10. NGHĨA VỤ PHÁP LÝ (LEGAL OBLIGATIONS)
 
 model LegalObligationType {
-  id             Int     @id @default(autoincrement()) @map("obligation_type_id")
+  id             BigInt  @id @default(autoincrement()) @map("obligation_type_id")
   typeName       String  @map("type_name") @db.VarChar(150)
   description    String? @db.Text
   occurrenceType String? @map("occurrence_type") @db.VarChar(30)
   isActive       Boolean @default(true) @map("is_active")
 
+  // Quan hệ
+  obligations LegalObligation[]
+
   @@map("legal_obligation_types")
 }
 
 model LegalObligation {
-  id             Int     @id @default(autoincrement()) @map("obligation_id")
-  obligationName String  @map("obligation_name") @db.VarChar(255)
-  obligationType String? @map("obligation_type") @db.VarChar(50)
-  frequencyType  String? @map("frequency_type") @db.VarChar(30)
-  description    String? @db.Text
-  legalBasis     String? @map("legal_basis") @db.Text
-  sourceUrl      String? @map("source_url") @db.VarChar(500)
-  applicability  String? @default("APPLICABLE") @map("applicability") @db.VarChar(30)
-  status         String  @default("ACTIVE") @db.VarChar(30)
+  id               Int                  @id @default(autoincrement()) @map("obligation_id")
+  obligationName   String               @map("obligation_name") @db.VarChar(255)
+  obligationTypeId BigInt?              @map("obligation_type_id")
+  frequencyType    String?              @map("frequency_type") @db.VarChar(30)
+  description      String?              @db.Text
+  legalBasis       String?              @map("legal_basis") @db.Text
+  sourceUrl        String?              @map("source_url") @db.VarChar(500)
+  applicability    String?              @default("APPLICABLE") @map("applicability") @db.VarChar(30)
+  status           String               @default("ACTIVE") @db.VarChar(30)
 
   // Quan hệ
-  periods LegalObligationPeriod[]
+  obligationType LegalObligationType?    @relation(fields: [obligationTypeId], references: [id])
+  periods        LegalObligationPeriod[]
 
   @@map("legal_obligations")
 }

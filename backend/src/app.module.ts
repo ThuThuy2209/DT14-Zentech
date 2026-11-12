@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { createObserveModule } from '@nestjs/observe';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
+import { AuthModule } from './modules/auth/auth.module.js';
 import { CustomersModule } from './modules/customers/customers.module.js';
 import { QuotesModule } from './modules/quotes/quotes.module.js';
 import { ContractsModule } from './modules/contracts/contracts.module.js';
@@ -25,6 +26,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       isGlobal: true,
     }),
 
+    AuthModule,
     CustomersModule,
     QuotesModule,
     ContractsModule,
