@@ -20,11 +20,11 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onOpenProfile }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },
-    { id: 'copilot', label: 'Trợ lý AI Copilot', icon: Sparkles },
     { id: 'invoices', label: 'Chứng từ & Hóa đơn', icon: Receipt },
     { id: 'customers', label: 'Khách hàng & Hợp đồng', icon: Users },
     { id: 'finance', label: 'Thu chi & Công nợ', icon: Wallet },
     { id: 'tax-calendar', label: 'Lịch nghĩa vụ thuế', icon: CalendarDays },
+    { id: 'copilot', label: 'Trợ lý AI Copilot', icon: Sparkles },
     { id: 'settings', label: 'Cài đặt hệ thống', icon: Settings },
   ];
 
