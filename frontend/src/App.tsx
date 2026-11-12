@@ -1,4 +1,5 @@
 import React from 'react';
+import { CustomersView } from './features/customers/CustomersView';
 import { AppLayout } from './components/layout/AppLayout';
 import { DashboardView } from './features/dashboard/DashboardView';
 import { InvoiceView } from './features/invoices/InvoiceView';
@@ -20,12 +21,7 @@ export default function App() {
               </div>
             );
           case 'customers':
-            return (
-              <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center">
-                <h2 className="text-lg font-bold text-slate-800">Khách hàng & Hợp đồng</h2>
-                <p className="text-slate-500 text-xs mt-1">Đang phát triển...</p>
-              </div>
-            );
+            return <CustomersView />;
           case 'finance':
             return (
               <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center">
