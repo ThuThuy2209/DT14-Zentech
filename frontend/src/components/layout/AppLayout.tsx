@@ -3,7 +3,7 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 
 interface AppLayoutProps {
-  children: (props: { activeTab: string }) => React.ReactNode;
+  children: (props: { activeTab: string; setActiveTab: (tab: string) => void }) => React.ReactNode;
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
@@ -21,9 +21,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
       {/* Vùng nội dung chính */}
       <div className="flex-1 flex flex-col min-w-0">
-        <Header onUploadInvoiceClick={() => alert('Mở cửa sổ chụp / tải lên hóa đơn VAT!')} />
+        <Header onUploadInvoiceClick={() => setActiveTab('invoices')} />
         <main className="flex-1 p-8 overflow-y-auto">
-          {children({ activeTab })}
+          {children({ activeTab, setActiveTab })}
         </main>
       </div>
 
