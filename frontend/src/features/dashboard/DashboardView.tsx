@@ -16,7 +16,11 @@ import {
   ChevronDown
 } from 'lucide-react';
 
-export const DashboardView: React.FC = () => {
+interface DashboardViewProps {
+  onNavigate?: (tab: string) => void;
+}
+
+export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   return (
     <div className="space-y-6">
       {/* 1. Header chào buổi sáng & Bộ lọc thời gian */}
@@ -179,7 +183,10 @@ export const DashboardView: React.FC = () => {
                   <button className="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">
                     Bỏ qua
                   </button>
-                  <button className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm shadow-blue-500/20 transition-all">
+                  <button 
+                    onClick={() => onNavigate?.('invoices')}
+                    className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold rounded-lg shadow-sm shadow-blue-500/20 transition-all cursor-pointer"
+                  >
                     Kiểm tra & Duyệt
                   </button>
                 </div>
@@ -212,7 +219,10 @@ export const DashboardView: React.FC = () => {
                   <button className="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">
                     Bỏ qua
                   </button>
-                  <button className="px-3.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg shadow-sm transition-all">
+                  <button 
+                    onClick={() => onNavigate?.('invoices')}
+                    className="px-3.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-700 text-xs font-semibold rounded-lg shadow-sm transition-all cursor-pointer"
+                  >
                     Kiểm tra & Sửa
                   </button>
                 </div>
