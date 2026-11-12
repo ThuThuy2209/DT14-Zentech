@@ -4,6 +4,7 @@ import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { CustomersModule } from './modules/customers/customers.module.js';
+import { ServicesModule } from './modules/services/services.module.js';
 import { QuotesModule } from './modules/quotes/quotes.module.js';
 import { ContractsModule } from './modules/contracts/contracts.module.js';
 import { InvoicesModule } from './modules/invoices/invoices.module.js';
@@ -28,6 +29,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
     AuthModule,
     CustomersModule,
+    ServicesModule,
     QuotesModule,
     ContractsModule,
     InvoicesModule,
