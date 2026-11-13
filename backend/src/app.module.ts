@@ -7,6 +7,7 @@ import { CustomersModule } from './modules/customers/customers.module.js';
 import { ServicesModule } from './modules/services/services.module.js';
 import { QuotesModule } from './modules/quotes/quotes.module.js';
 import { ContractsModule } from './modules/contracts/contracts.module.js';
+import { AcceptanceModule } from './modules/acceptance/acceptance.module.js';
 import { InvoicesModule } from './modules/invoices/invoices.module.js';
 import { ReceivablesModule } from './modules/receivables/receivables.module.js';
 import { ExpensesModule } from './modules/expenses/expenses.module.js';
@@ -34,6 +35,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     ServicesModule,
     QuotesModule,
     ContractsModule,
+    AcceptanceModule,
     InvoicesModule,
     ReceivablesModule,
     ExpensesModule,
