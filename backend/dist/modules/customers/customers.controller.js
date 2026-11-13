@@ -10,67 +10,97 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post, Query, UseGuards, } from '@nestjs/common';
 import { CustomersService } from './customers.service.js';
 import { CreateCustomerDto } from './dto/create-customer.dto.js';
 import { UpdateCustomerDto } from './dto/update-customer.dto.js';
+import { FilterCustomerDto } from './dto/filter-customer.dto.js';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 let CustomersController = class CustomersController {
     customersService;
     constructor(customersService) {
         this.customersService = customersService;
     }
-    create(createCustomerDto) {
-        return this.customersService.create(createCustomerDto);
+    async create(createCustomerDto) {
+        const data = await this.customersService.create(createCustomerDto);
+        return {
+            success: true,
+            message: 'Tạo khách hàng mới thành công',
+            data,
+        };
     }
-    findAll() {
-        return this.customersService.findAll();
+    async findAll(query) {
+        const data = await this.customersService.findAll(query);
+        return {
+            success: true,
+            message: 'Lấy danh sách khách hàng thành công',
+            data,
+        };
     }
-    findOne(id) {
-        return this.customersService.findOne(+id);
+    async findOne(id) {
+        const data = await this.customersService.findOne(id);
+        return {
+            success: true,
+            message: 'Lấy thông tin chi tiết khách hàng thành công',
+            data,
+        };
     }
-    update(id, updateCustomerDto) {
-        return this.customersService.update(+id, updateCustomerDto);
+    async update(id, updateCustomerDto) {
+        const data = await this.customersService.update(id, updateCustomerDto);
+        return {
+            success: true,
+            message: 'Cập nhật thông tin khách hàng thành công',
+            data,
+        };
     }
-    remove(id) {
-        return this.customersService.remove(+id);
+    async remove(id) {
+        const result = await this.customersService.remove(id);
+        return {
+            success: true,
+            message: result.message,
+            data: { isSoftDeleted: result.isSoftDeleted },
+        };
     }
 };
 __decorate([
     Post(),
+    HttpCode(HttpStatus.CREATED),
     __param(0, Body()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [CreateCustomerDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], CustomersController.prototype, "create", null);
 __decorate([
     Get(),
+    __param(0, Query()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [FilterCustomerDto]),
+    __metadata("design:returntype", Promise)
 ], CustomersController.prototype, "findAll", null);
 __decorate([
     Get(':id'),
-    __param(0, Param('id')),
+    __param(0, Param('id', ParseIntPipe)),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
 ], CustomersController.prototype, "findOne", null);
 __decorate([
     Patch(':id'),
-    __param(0, Param('id')),
+    __param(0, Param('id', ParseIntPipe)),
     __param(1, Body()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, UpdateCustomerDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [Number, UpdateCustomerDto]),
+    __metadata("design:returntype", Promise)
 ], CustomersController.prototype, "update", null);
 __decorate([
     Delete(':id'),
-    __param(0, Param('id')),
+    __param(0, Param('id', ParseIntPipe)),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
 ], CustomersController.prototype, "remove", null);
 CustomersController = __decorate([
+    UseGuards(JwtAuthGuard),
     Controller('customers'),
     __metadata("design:paramtypes", [CustomersService])
 ], CustomersController);

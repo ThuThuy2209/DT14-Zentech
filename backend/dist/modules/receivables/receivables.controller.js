@@ -10,67 +10,133 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post, Query, UseGuards, } from '@nestjs/common';
 import { ReceivablesService } from './receivables.service.js';
-import { CreateReceivableDto } from './dto/create-receivable.dto.js';
-import { UpdateReceivableDto } from './dto/update-receivable.dto.js';
+import { RecordPaymentDto } from './dto/record-payment.dto.js';
+import { FilterReceivableDto } from './dto/filter-receivable.dto.js';
+import { CreateReminderDraftDto } from './dto/create-reminder-draft.dto.js';
+import { ApproveReminderDto } from './dto/approve-reminder.dto.js';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
+import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 let ReceivablesController = class ReceivablesController {
     receivablesService;
     constructor(receivablesService) {
         this.receivablesService = receivablesService;
     }
-    create(createReceivableDto) {
-        return this.receivablesService.create(createReceivableDto);
+    async getSummary() {
+        const data = await this.receivablesService.getSummary();
+        return {
+            success: true,
+            message: 'Lấy báo cáo tổng hợp công nợ thành công',
+            data,
+        };
     }
-    findAll() {
-        return this.receivablesService.findAll();
+    async recordPayment(recordPaymentDto, user) {
+        const data = await this.receivablesService.recordPayment(recordPaymentDto, user?.id);
+        return {
+            success: true,
+            message: 'Ghi nhận thanh toán thành công',
+            data,
+        };
     }
-    findOne(id) {
-        return this.receivablesService.findOne(+id);
+    async findAll(query) {
+        const data = await this.receivablesService.findAll(query);
+        return {
+            success: true,
+            message: 'Lấy danh sách công nợ thành công',
+            data,
+        };
     }
-    update(id, updateReceivableDto) {
-        return this.receivablesService.update(+id, updateReceivableDto);
+    async createReminderDraft(invoiceId, dto, user) {
+        const data = await this.receivablesService.createReminderDraft(invoiceId, dto, user?.id);
+        return {
+            success: true,
+            message: 'AI soạn nháp email nhắc nợ thành công',
+            data,
+        };
     }
-    remove(id) {
-        return this.receivablesService.remove(+id);
+    async approveReminder(approvalId, dto, user) {
+        const data = await this.receivablesService.approveReminder(approvalId, dto, user?.id);
+        return {
+            success: true,
+            message: data.message,
+            data: data.approval,
+        };
+    }
+    async getReminderHistory(invoiceId) {
+        const data = await this.receivablesService.getReminderHistory(invoiceId);
+        return {
+            success: true,
+            message: 'Lấy lịch sử nhắc nợ thành công',
+            data,
+        };
+    }
+    async findOne(invoiceId) {
+        const data = await this.receivablesService.findOne(invoiceId);
+        return {
+            success: true,
+            message: 'Lấy thông tin công nợ chi tiết thành công',
+            data,
+        };
     }
 };
 __decorate([
-    Post(),
-    __param(0, Body()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [CreateReceivableDto]),
-    __metadata("design:returntype", void 0)
-], ReceivablesController.prototype, "create", null);
-__decorate([
-    Get(),
+    Get('summary'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
+], ReceivablesController.prototype, "getSummary", null);
+__decorate([
+    Post('payments'),
+    HttpCode(HttpStatus.CREATED),
+    __param(0, Body()),
+    __param(1, CurrentUser()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [RecordPaymentDto, Object]),
+    __metadata("design:returntype", Promise)
+], ReceivablesController.prototype, "recordPayment", null);
+__decorate([
+    Get(),
+    __param(0, Query()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [FilterReceivableDto]),
+    __metadata("design:returntype", Promise)
 ], ReceivablesController.prototype, "findAll", null);
 __decorate([
-    Get(':id'),
-    __param(0, Param('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], ReceivablesController.prototype, "findOne", null);
-__decorate([
-    Patch(':id'),
-    __param(0, Param('id')),
+    Post(':invoiceId/remind-draft'),
+    HttpCode(HttpStatus.CREATED),
+    __param(0, Param('invoiceId', ParseIntPipe)),
     __param(1, Body()),
+    __param(2, CurrentUser()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, UpdateReceivableDto]),
-    __metadata("design:returntype", void 0)
-], ReceivablesController.prototype, "update", null);
+    __metadata("design:paramtypes", [Number, CreateReminderDraftDto, Object]),
+    __metadata("design:returntype", Promise)
+], ReceivablesController.prototype, "createReminderDraft", null);
 __decorate([
-    Delete(':id'),
-    __param(0, Param('id')),
+    Post('remind-approve/:approvalId'),
+    __param(0, Param('approvalId', ParseIntPipe)),
+    __param(1, Body()),
+    __param(2, CurrentUser()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], ReceivablesController.prototype, "remove", null);
+    __metadata("design:paramtypes", [Number, ApproveReminderDto, Object]),
+    __metadata("design:returntype", Promise)
+], ReceivablesController.prototype, "approveReminder", null);
+__decorate([
+    Get(':invoiceId/reminder-history'),
+    __param(0, Param('invoiceId', ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], ReceivablesController.prototype, "getReminderHistory", null);
+__decorate([
+    Get(':invoiceId'),
+    __param(0, Param('invoiceId', ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], ReceivablesController.prototype, "findOne", null);
 ReceivablesController = __decorate([
+    UseGuards(JwtAuthGuard),
     Controller('receivables'),
     __metadata("design:paramtypes", [ReceivablesService])
 ], ReceivablesController);
