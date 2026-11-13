@@ -1,6 +1,8 @@
 import React from 'react';
 import { CustomersView } from './features/customers/CustomersView';
 import { FinanceView } from './features/finance/FinanceView';
+import { TaxCalendarView } from './features/tax/TaxCalendarView';
+import { CopilotView } from './features/copilot/CopilotView';
 import { AppLayout } from './components/layout/AppLayout';
 import { DashboardView } from './features/dashboard/DashboardView';
 import { InvoiceView } from './features/invoices/InvoiceView';
@@ -15,23 +17,14 @@ export default function App() {
           case 'invoices':
             return <InvoiceView />;
           case 'copilot':
-            return (
-              <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center">
-                <h2 className="text-lg font-bold text-slate-800">Trợ lý AI Copilot</h2>
-                <p className="text-slate-500 text-xs mt-1">Đang kết nối AI Service tại port 5000...</p>
-              </div>
-            );
+            return <CopilotView onNavigate={setActiveTab} />;
+
           case 'customers':
             return <CustomersView />;
           case 'finance':
             return <FinanceView />;
           case 'tax-calendar':
-            return (
-              <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center">
-                <h2 className="text-lg font-bold text-slate-800">Lịch nghĩa vụ thuế</h2>
-                <p className="text-slate-500 text-xs mt-1">Đang phát triển...</p>
-              </div>
-            );
+            return <TaxCalendarView />;
           case 'settings':
             return (
               <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center">
