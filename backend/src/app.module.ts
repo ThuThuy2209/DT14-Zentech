@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { createObserveModule } from '@nestjs/observe';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
@@ -10,6 +10,8 @@ import { ContractsModule } from './modules/contracts/contracts.module.js';
 import { AcceptanceModule } from './modules/acceptance/acceptance.module.js';
 import { InvoicesModule } from './modules/invoices/invoices.module.js';
 import { ReceivablesModule } from './modules/receivables/receivables.module.js';
+import { ExpensesModule } from './modules/expenses/expenses.module.js';
+import { BankAccountsModule } from './modules/bank-accounts/bank-accounts.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { ConfigModule } from '@nestjs/config';
 
@@ -36,6 +38,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     AcceptanceModule,
     InvoicesModule,
     ReceivablesModule,
+    ExpensesModule,
+    BankAccountsModule,
     PrismaModule,
   ],
   controllers: [AppController],
