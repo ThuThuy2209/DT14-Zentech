@@ -1,12 +1,25 @@
+# docker-compose.yml
+# Dùng khi build production: chạy toàn bộ hệ thống bằng Docker
+#
+# --- Nếu đã có data (đã dev bằng docker-compose.dev.yml) ---
+# Build & chạy      : docker compose up --build -d
+# Chạy lại          : docker compose up -d
+# Tắt toàn bộ       : docker compose down
+# Xem log           : docker compose logs -f
+#
+# --- Nếu chưa có data (máy mới / reset) ---
+# 1. Build & chạy   : docker compose up --build -d
+# 2. Apply schema   : docker compose exec backend npx prisma migrate deploy
+# 3. Sinh data mẫu  : docker compose exec backend npm run db:seed
+
 name: opc-smartoffice
 
-# 1. Khuôn mẫu dùng chung cho các service
+# Khuôn mẫu dùng chung cho các service
 x-common: &common
   restart: unless-stopped
   networks:
     - opc_network
 
-# 2. Khai báo các container
 services:
   # --- POSTGRESQL ---
   postgres:
@@ -24,7 +37,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-  #  Backend API
+  # --- BACKEND (NestJS) ---
   backend:
     <<: *common
     build:
@@ -32,16 +45,12 @@ services:
       dockerfile: Dockerfile
     container_name: opc_backend
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       PORT: 8080
       AI_SERVICE_URL: http://ai_service:5000
-
       DATABASE_URL: "postgresql://${DATABASE_USER:?Set DATABASE_USER}:${DATABASE_PASSWORD:?Set DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME:?Set DATABASE_NAME}?schema=public"
     ports:
       - "127.0.0.1:8080:8080"
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
     depends_on:
       - postgres
       - ai_service
@@ -57,9 +66,6 @@ services:
     container_name: opc_frontend
     ports:
       - "127.0.0.1:3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     depends_on:
       - backend
     env_file:
@@ -79,13 +85,11 @@ services:
     ports:
       - "127.0.0.1:5000:5000"
 
-# 3. Khai báo mạng
 networks:
   opc_network:
     driver: bridge
     name: opc_smartoffice_network
 
-# 4. Khai báo volume lưu dữ liệu
 volumes:
   pgdata:
     driver: local
