@@ -5,5 +5,6 @@ import { ReceivablesController } from './receivables.controller.js';
 @Module({
   controllers: [ReceivablesController],
   providers: [ReceivablesService],
+  exports: [ReceivablesService],
 })
 export class ReceivablesModule {}
