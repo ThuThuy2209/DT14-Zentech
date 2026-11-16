@@ -7,6 +7,7 @@ import { FinanceView } from './pages/FinanceView';
 import { TaxCalendarView } from './pages/TaxCalendarView';
 import { CopilotView } from './pages/CopilotView';
 import { AppLayout } from './layout/AppLayout';
+import { SettingsView } from './pages/SettingsView';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -34,12 +35,7 @@ export default function App() {
           case 'tax-calendar':
             return <TaxCalendarView />;
           case 'settings':
-            return (
-              <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center">
-                <h2 className="text-lg font-bold text-slate-800">Cài đặt hệ thống</h2>
-                <p className="text-slate-500 text-xs mt-1">Đang phát triển...</p>
-              </div>
-            );
+            return <SettingsView />;
           default:
             return (
               <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center">
