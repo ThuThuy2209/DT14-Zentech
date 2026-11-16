@@ -9,7 +9,7 @@ import {
 // DỮ LIỆU 25 HÓA ĐƠN MẪU (theo file Word của Đạt)
 // =============================================
 const invoices = [
-  { id: 1, so: '000001', ngay: '01/11/2026', kyHieu: '1C26TMS', nguoiMua: 'Công ty TNHH TM Hoàng Gia', mstMua: '9900000001', dichVu: 'Thiết kế website doanh nghiệp', truocThue: 8000000, thue: 800000, tong: 8800000, trangThai: 'can_duyet', loi: 'trung_lap' },
+  { id: 1, so: '000001', ngay: '01/11/2026', kyHieu: '1C26TMS', nguoiMua: 'Công ty TNHH Thương mại Hoàng Gia', mstMua: '9900000001', dichVu: 'Thiết kế website doanh nghiệp', truocThue: 8000000, thue: 800000, tong: 8800000, trangThai: 'can_duyet', loi: 'trung_lap' },
   { id: 2, so: '000002', ngay: '02/11/2026', kyHieu: '1C26TMS', nguoiMua: 'Công ty CP Công nghệ Đại Việt', mstMua: '9900000002', dichVu: 'Phát triển phần mềm quản lý', truocThue: 15000000, thue: 1500000, tong: 16500000, trangThai: 'hop_le', loi: null },
   { id: 3, so: '000003', ngay: '02/11/2026', kyHieu: '1C26TMS', nguoiMua: 'Công ty TNHH Nội thất Phương Nam', mstMua: '9900000003', dichVu: 'Thiết kế website bán hàng', truocThue: 9500000, thue: 950000, tong: 10450000, trangThai: 'hop_le', loi: null },
   { id: 4, so: '000004', ngay: '03/11/2026', kyHieu: '1C26TMS', nguoiMua: 'Công ty TNHH Dịch vụ An Khang', mstMua: '9900000004', dichVu: 'Bảo trì hệ thống phần mềm', truocThue: 6000000, thue: 600000, tong: 6600000, trangThai: 'hop_le', loi: null },
@@ -381,12 +381,19 @@ export const InvoiceView: React.FC = () => {
     inv.trangThai === 'can_duyet' && !accepted.includes(inv.id) && !rejected.includes(inv.id)
   ).length;
 
-  const tabs = [
-    { key: 'tat_ca', label: 'Tất cả', count: 25 },
-    { key: 'can_duyet', label: 'Cần duyệt', count: canDuyetCount, urgent: true },
-    { key: 'hop_le', label: 'Hợp lệ', count: 23 + accepted.length },
-    { key: 'tu_choi', label: 'Từ chối', count: rejected.length },
-  ] as const;
+  interface ITab {
+  key: string;
+  label: string;
+  count: number;
+  urgent?: boolean;
+}
+
+const tabs: ITab[] = [
+  { key: 'tat_ca', label: 'Tất cả', count: 25 },
+  { key: 'can_duyet', label: 'Cần duyệt', count: canDuyetCount, urgent: true },
+  { key: 'hop_le', label: 'Hợp lệ', count: 23 + accepted.length },
+  { key: 'tu_choi', label: 'Từ chối', count: rejected.length },
+];
 
   return (
     <div className="space-y-4">

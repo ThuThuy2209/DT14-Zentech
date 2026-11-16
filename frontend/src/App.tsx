@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { LoginView } from './features/auth/LoginView'; 
 import { CustomersView } from './features/customers/CustomersView';
 import { FinanceView } from './features/finance/FinanceView';
 import { TaxCalendarView } from './features/tax/TaxCalendarView';
@@ -8,6 +9,15 @@ import { DashboardView } from './features/dashboard/DashboardView';
 import { InvoiceView } from './features/invoices/InvoiceView';
 
 export default function App() {
+  // Kiểm tra token đã lưu trong localStorage chưa
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return !!localStorage.getItem('accessToken');
+  });
+
+  if (!isAuthenticated) {
+    return <LoginView onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
+
   return (
     <AppLayout>
       {({ activeTab, setActiveTab }) => {
@@ -18,7 +28,6 @@ export default function App() {
             return <InvoiceView />;
           case 'copilot':
             return <CopilotView onNavigate={setActiveTab} />;
-
           case 'customers':
             return <CustomersView />;
           case 'finance':
