@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Lock, AtSign, Eye, EyeOff, ShieldCheck, ArrowRight, Zap, AlertCircle } from 'lucide-react';
-import { login } from '../../services/api/authService';
+import { login } from '../services/authService';
 
 interface LoginViewProps {
   onLoginSuccess?: () => void;

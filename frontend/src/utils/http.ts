@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../constant/api';
+import { API_BASE_URL } from '../constants/api';
 
 // Định dạng dữ liệu phản hồi chuẩn theo CONTRIBUTING.md của nhóm
 export interface ApiResponse<T = any> {

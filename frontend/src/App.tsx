@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { LoginView } from './features/auth/LoginView'; 
-import { CustomersView } from './features/customers/CustomersView';
-import { FinanceView } from './features/finance/FinanceView';
-import { TaxCalendarView } from './features/tax/TaxCalendarView';
-import { CopilotView } from './features/copilot/CopilotView';
-import { AppLayout } from './components/layout/AppLayout';
-import { DashboardView } from './features/dashboard/DashboardView';
-import { InvoiceView } from './features/invoices/InvoiceView';
+import React, { useState } from 'react';
+import { LoginView } from './pages/LoginView'; 
+import { DashboardView } from './pages/DashboardView';
+import { InvoiceView } from './pages/InvoiceView';
+import { CustomersView } from './pages/CustomersView';
+import { FinanceView } from './pages/FinanceView';
+import { TaxCalendarView } from './pages/TaxCalendarView';
+import { CopilotView } from './pages/CopilotView';
+import { AppLayout } from './layout/AppLayout';
 
 export default function App() {
-  // Kiểm tra token đã lưu trong localStorage chưa
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return !!localStorage.getItem('accessToken');
   });

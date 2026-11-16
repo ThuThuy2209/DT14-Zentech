@@ -1,5 +1,5 @@
-import { post } from '../../utils/http';
-import type { ApiResponse } from '../../utils/http';
+import { post } from '../utils/http';
+import type { ApiResponse } from '../utils/http';
 
 // Interface dữ liệu nhận từ form đăng nhập
 export interface LoginPayload {
