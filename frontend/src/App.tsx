@@ -8,6 +8,7 @@ import { TaxCalendarView } from './pages/TaxCalendarView';
 import { CopilotView } from './pages/CopilotView';
 import { AppLayout } from './layout/AppLayout';
 import { SettingsView } from './pages/SettingsView';
+import { ProfileView } from './pages/ProfileView';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -17,7 +18,7 @@ export default function App() {
   if (!isAuthenticated) {
     return <LoginView onLoginSuccess={() => setIsAuthenticated(true)} />;
   }
-
+  
   return (
     <AppLayout>
       {({ activeTab, setActiveTab }) => {
@@ -36,6 +37,8 @@ export default function App() {
             return <TaxCalendarView />;
           case 'settings':
             return <SettingsView />;
+          case 'profile':
+            return <ProfileView onNavigate={setActiveTab} onLogout={() => setIsAuthenticated(false)} />;
           default:
             return (
               <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center">

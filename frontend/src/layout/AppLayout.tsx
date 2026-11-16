@@ -16,7 +16,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
-        onOpenProfile={() => setShowProfileModal(true)} 
+        onOpenProfile={() => setActiveTab('profile')}
       />
 
       {/* Vùng nội dung chính */}
