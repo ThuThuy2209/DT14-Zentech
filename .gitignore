@@ -39,10 +39,11 @@ logs/
 *.tmp
 *.temp
 
-# OS files
+# OS files & Office temp
 .DS_Store
 Thumbs.db
 desktop.ini
+~$*
 
 # IDEs
 .idea/
