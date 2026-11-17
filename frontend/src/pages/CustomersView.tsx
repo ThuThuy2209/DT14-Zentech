@@ -14,7 +14,6 @@ import {
   TrendingUp,
   Layers,
   Edit,
-  Building2
 } from 'lucide-react';
 
 interface Contract {

@@ -6,7 +6,7 @@ interface ProfileViewProps {
   onLogout?: () => void;
 }
 
-export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigate, onLogout }) => {
+export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout }) => {
   // Modal states
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);

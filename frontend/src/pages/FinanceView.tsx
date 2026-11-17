@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  FileText, 
   Clock, 
   CheckCircle2, 
   AlertTriangle, 
@@ -12,10 +11,8 @@ import {
   ShieldCheck, 
   X, 
   Edit3, 
-  ChevronRight,
   TrendingUp,
   CreditCard,
-  Building2
 } from 'lucide-react';
 
 interface DebtRecord {
@@ -41,7 +38,7 @@ export const FinanceView: React.FC = () => {
   const [selectedDebt, setSelectedDebt] = useState<DebtRecord | null>(null);
 
   // Dữ liệu công nợ khớp với thiết kế Stitch và các hợp đồng
-  const [debts, setDebts] = useState<DebtRecord[]>([
+  const [debts] = useState<DebtRecord[]>([
     {
       id: '1',
       avatarText: 'Hoang Gia',

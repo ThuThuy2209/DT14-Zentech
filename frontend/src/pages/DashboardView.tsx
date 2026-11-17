@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   TrendingUp, 
   Wallet, 
@@ -21,9 +21,18 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
+  // State quản lý đóng/mở khung lịch và khoảng thời gian chọn
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState('Tháng này (Tháng 11/2026)');
+  const [selectedDay, setSelectedDay] = useState(17);
+
+  // Mảng ngày trong Tháng 11/2026 (Tháng 11 có 30 ngày)
+  const daysInMonth = Array.from({ length: 30 }, (_, i) => i + 1);
+
+
   return (
     <div className="space-y-6">
-      {/* 1. Header chào buổi sáng & Bộ lọc thời gian */}
+            {/* 1. Header chào buổi sáng & Bộ lọc thời gian */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
@@ -33,13 +42,168 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             Dưới đây là tình hình hoạt động của <span className="font-semibold text-slate-700">Minh Software</span> hôm nay.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition-colors">
-            <Calendar className="w-3.5 h-3.5 text-slate-500" />
-            <span>Tháng này (Tháng 11/2026)</span>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1" />
-          </button>
-          <button className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition-colors">
+
+        <div className="flex items-center gap-3 relative">
+          {/* NÚT BẤM MỞ KHUNG LỊCH */}
+          <div className="relative">
+            <button 
+              type="button"
+              onClick={() => setShowCalendar(!showCalendar)}
+              className={`flex items-center gap-2 px-3.5 py-2 border rounded-xl text-xs font-semibold shadow-xs transition-all ${
+                showCalendar 
+                  ? 'bg-blue-50 border-blue-500 text-blue-700 ring-2 ring-blue-500/10' 
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5 text-blue-600" />
+              <span>{selectedPeriod}</span>
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 ml-1 transition-transform duration-200 ${showCalendar ? 'rotate-180 text-blue-600' : ''}`} />
+            </button>
+
+            {/* KHUNG LỊCH THẢ XUỐNG (CALENDAR DROPDOWN) */}
+            {showCalendar && (
+              <>
+                {/* Lớp nền trong suốt để bấm ra ngoài tự đóng lịch */}
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setShowCalendar(false)} 
+                />
+
+                {/* Khối Lịch Chi Tiết */}
+                <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-slate-200 rounded-3xl p-5 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150 space-y-4">
+                  
+                  {/* Thanh chọn nhanh: Hôm nay / Tuần / Tháng / Quý */}
+                  <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-xl text-[11px] font-semibold text-slate-600 text-center">
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedPeriod('Hôm nay (17/11/2026)'); setShowCalendar(false); }}
+                      className="py-1 px-2 rounded-lg hover:bg-white hover:text-blue-600 hover:shadow-2xs transition-all"
+                    >
+                      Hôm nay
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedPeriod('Tháng 11/2026'); setShowCalendar(false); }}
+                      className="py-1 px-2 rounded-lg bg-white text-blue-600 shadow-2xs font-bold"
+                    >
+                      Tháng 11
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedPeriod('Quý 4/2026'); setShowCalendar(false); }}
+                      className="py-1 px-2 rounded-lg hover:bg-white hover:text-blue-600 hover:shadow-2xs transition-all"
+                    >
+                      Quý 4
+                    </button>
+                  </div>
+
+                  {/* Header Tháng & Năm */}
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-sm font-bold text-slate-900">Tháng 11, 2026</span>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      Tài khóa Q4
+                    </span>
+                  </div>
+
+                  {/* Lưới Lịch 7 Ngày trong tuần */}
+                  <div>
+                    <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 uppercase mb-2">
+                      <span>T2</span>
+                      <span>T3</span>
+                      <span>T4</span>
+                      <span>T5</span>
+                      <span>T6</span>
+                      <span>T7</span>
+                      <span className="text-rose-500">CN</span>
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                      {/* Khoảng trống đầu tháng (Tháng 11/2026 bắt đầu từ Chủ Nhật) */}
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={`empty-${i}`} className="h-8" />
+                      ))}
+
+                      {/* Danh sách ngày 1 đến 30 */}
+                      {daysInMonth.map((day) => {
+                        const isToday = day === 17;
+                        const isTaxDeadline = day === 20; // Hạn thuế GTGT
+                        const isTNDNDeadline = day === 30; // Hạn thuế TNDN
+                        const isSelected = selectedDay === day;
+
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => {
+                              setSelectedDay(day);
+                              setSelectedPeriod(`Ngày ${day}/11/2026`);
+                              setShowCalendar(false);
+                            }}
+                            className={`h-8 w-8 mx-auto rounded-xl flex flex-col items-center justify-center font-semibold relative transition-all ${
+                              isSelected
+                                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30 font-bold scale-105'
+                                : isToday
+                                ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200'
+                                : 'text-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            <span>{day}</span>
+                            {/* Dấu chấm cảnh báo hạn nộp thuế */}
+                            {isTaxDeadline && !isSelected && (
+                              <span className="absolute bottom-1 w-1.5 h-1.5 bg-rose-500 rounded-full" title="Hạn nộp tờ khai thuế GTGT" />
+                            )}
+                            {isTNDNDeadline && !isSelected && (
+                              <span className="absolute bottom-1 w-1.5 h-1.5 bg-amber-500 rounded-full" title="Hạn tạm nộp thuế TNDN Q4" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Chú thích các mốc thuế quan trọng */}
+                  <div className="pt-3 border-t border-slate-100 space-y-1.5 text-[11px]">
+                    <div className="flex items-center justify-between text-slate-600">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-rose-500" />
+                        <span>20/11: Hạn nộp thuế GTGT & TNCN</span>
+                      </div>
+                      <span className="text-rose-600 font-bold">Còn 3 ngày</span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-slate-600">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-amber-500" />
+                        <span>30/11: Hạn tạm nộp TNDN Quý 4</span>
+                      </div>
+                      <span className="text-slate-500">Còn 13 ngày</span>
+                    </div>
+                  </div>
+
+                  {/* Nút điều hướng thông minh sang trang Lịch nghĩa vụ thuế */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCalendar(false);
+                      onNavigate?.('tax-calendar');
+                    }}
+                    className="w-full py-2 bg-slate-50 hover:bg-blue-50 text-blue-700 border border-slate-200 hover:border-blue-300 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5"
+                  >
+                    <span>📅</span>
+                    <span>Mở Lịch Nghĩa Vụ Thuế Chi Tiết →</span>
+                  </button>
+
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Nút Xuất Báo Cáo */}
+          <button 
+            type="button"
+            onClick={() => alert('Đã xuất báo cáo tài chính Tháng 11/2026 (PDF & Excel) thành công!')}
+            className="flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-xs transition-colors"
+          >
             <Download className="w-3.5 h-3.5 text-slate-500" />
             <span>Xuất báo cáo</span>
           </button>
@@ -165,7 +329,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-900">Hóa đơn #000001</span>
-                      <span className="text-xs text-slate-400">• Cty TNHH TM Hoàng Gia</span>
+                      <span className="text-xs text-slate-400">• Cty TNHH Thương mại Hoàng Gia</span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs font-semibold text-slate-700">8.800.000 đ</span>
@@ -192,7 +356,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 </div>
               </div>
 
-              {/* Mục 2: Hóa đơn #000025 - Sai MST */}
+              {/* Mục 3: Hóa đơn #000020 - Sai MST */}
               <div className="p-4 hover:bg-slate-50/70 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
@@ -200,11 +364,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900">Hóa đơn #000025</span>
-                      <span className="text-xs text-slate-400">• Công ty Thành Đạt</span>
+                      <span className="text-xs font-bold text-slate-900">Hóa đơn #000018</span>
+                      <span className="text-xs text-slate-400">• Công ty TNHH Cơ khí Tiến Đạt</span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs font-semibold text-slate-700">15.400.000 đ</span>
+                      <span className="text-xs font-semibold text-slate-700">12.650.000 đ</span>
                       <span className="text-[11px] text-slate-400">• 1 giờ trước</span>
                     </div>
                     <div className="mt-1.5">
@@ -228,7 +392,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 </div>
               </div>
 
-              {/* Mục 3: Nhắc nợ Công ty CP ABC */}
+              {/* Mục 3: Nhắc nợ Công ty CP Phát triển Hoàng Phúc */}
               <div className="p-4 hover:bg-slate-50/70 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
@@ -236,11 +400,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900">Công ty CP ABC</span>
-                      <span className="text-xs text-slate-400">• Hợp đồng Dev Ops #HD-109</span>
+                      <span className="text-xs font-bold text-slate-900">Hóa đơn #000020</span>
+                      <span className="text-xs text-slate-400">• Công ty CP Phát triển Hoàng Phúc</span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs font-bold text-rose-600">Nợ: 18.000.000 đ</span>
+                      <span className="text-xs font-bold text-rose-600">Nợ: 18.700.000 đ</span>
                       <span className="text-[11px] text-slate-400">• Hôm nay</span>
                     </div>
                     <div className="mt-1.5">

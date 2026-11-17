@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { LoginView } from './pages/LoginView'; 
 import { DashboardView } from './pages/DashboardView';
 import { InvoiceView } from './pages/InvoiceView';
@@ -34,7 +34,7 @@ export default function App() {
           case 'finance':
             return <FinanceView />;
           case 'tax-calendar':
-            return <TaxCalendarView />;
+            return <TaxCalendarView onNavigate={setActiveTab}/>;
           case 'settings':
             return <SettingsView />;
           case 'profile':
