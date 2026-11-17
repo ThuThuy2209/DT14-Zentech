@@ -1,22 +1,377 @@
-'''json
 [
   {
-    "file_path": "samples/invoice1.pdf",
+    "file_path": "backend/uploads/mock_invoices/HD_000001.pdf",
     "expected": {
-      "supplier_tax_id": "0101234567",
-      "supplier_name": "Công ty TNHH Thiết bị Văn phòng MISA",
-      "buyer_tax_id": "9900000002",
-      "buyer_name": "Công ty CP Công nghệ Đại Việt",
-      "invoice_number": "0000001",
+      "supplier_tax_id": "9900000001",
+      "supplier_name": "Công ty TNHH Thương mại Hoàng Gia",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000001",
+      "invoice_date": "2026-11-01",
+      "subtotal": 8000000.0,
+      "vat_amount": 800000.0,
+      "total_amount": 8800000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000002.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000002",
+      "supplier_name": "Công ty CP Công nghệ Đại Việt",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000002",
       "invoice_date": "2026-11-02",
       "subtotal": 15000000.0,
       "vat_amount": 1500000.0,
       "total_amount": 16500000.0,
-      "items": [],
-      "suggested_account": "642",
-      "accounting_reason": "",
-      "flags": []
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000003.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000003",
+      "supplier_name": "Công ty TNHH Nội thất Phương Nam",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000003",
+      "invoice_date": "2026-11-02",
+      "subtotal": 9500000.0,
+      "vat_amount": 950000.0,
+      "total_amount": 10450000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000004.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000004",
+      "supplier_name": "Công ty TNHH Dịch vụ An Khang",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000004",
+      "invoice_date": "2026-11-03",
+      "subtotal": 6000000.0,
+      "vat_amount": 600000.0,
+      "total_amount": 6600000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000005.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000005",
+      "supplier_name": "Công ty CP Đầu tư Thành Công",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000005",
+      "invoice_date": "2026-11-03",
+      "subtotal": 12000000.0,
+      "vat_amount": 1200000.0,
+      "total_amount": 13200000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000006.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000006",
+      "supplier_name": "Công ty TNHH Giáo dục Ánh Dương",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000006",
+      "invoice_date": "2026-11-04",
+      "subtotal": 18000000.0,
+      "vat_amount": 1800000.0,
+      "total_amount": 19800000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000007.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000007",
+      "supplier_name": "Công ty TNHH Logistics Đông Nam",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000007",
+      "invoice_date": "2026-11-04",
+      "subtotal": 11000000.0,
+      "vat_amount": 1100000.0,
+      "total_amount": 12100000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000008.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000008",
+      "supplier_name": "Công ty CP Thương mại Hưng Phát",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000008",
+      "invoice_date": "2026-11-05",
+      "subtotal": 6000000.0,
+      "vat_amount": 600000.0,
+      "total_amount": 6600000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000009.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000009",
+      "supplier_name": "Công ty TNHH Xây dựng Minh Long",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000009",
+      "invoice_date": "2026-11-05",
+      "subtotal": 14000000.0,
+      "vat_amount": 1400000.0,
+      "total_amount": 15400000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000010.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000010",
+      "supplier_name": "Công ty TNHH Truyền thông Sao Mai",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000010",
+      "invoice_date": "2026-11-06",
+      "subtotal": 5000000.0,
+      "vat_amount": 500000.0,
+      "total_amount": 5500000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000011.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000011",
+      "supplier_name": "Công ty CP Thiết bị Việt Nhật",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000011",
+      "invoice_date": "2026-11-06",
+      "subtotal": 4500000.0,
+      "vat_amount": 450000.0,
+      "total_amount": 4950000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000012.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000012",
+      "supplier_name": "Công ty TNHH Thực phẩm Gia Hân",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000012",
+      "invoice_date": "2026-11-07",
+      "subtotal": 10000000.0,
+      "vat_amount": 1000000.0,
+      "total_amount": 11000000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000013.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000013",
+      "supplier_name": "Công ty TNHH Dược phẩm Tâm An",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000013",
+      "invoice_date": "2026-11-07",
+      "subtotal": 7000000.0,
+      "vat_amount": 700000.0,
+      "total_amount": 7700000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000014.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000014",
+      "supplier_name": "Công ty CP Du lịch Biển Xanh",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000014",
+      "invoice_date": "2026-11-08",
+      "subtotal": 13000000.0,
+      "vat_amount": 1300000.0,
+      "total_amount": 14300000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000015.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000015",
+      "supplier_name": "Công ty TNHH Điện tử Hoàng Nam",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000015",
+      "invoice_date": "2026-11-08",
+      "subtotal": 9000000.0,
+      "vat_amount": 900000.0,
+      "total_amount": 9900000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000016.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000016",
+      "supplier_name": "Công ty TNHH Thời trang Bella",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000016",
+      "invoice_date": "2026-11-09",
+      "subtotal": 16000000.0,
+      "vat_amount": 1600000.0,
+      "total_amount": 17600000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000017.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000017",
+      "supplier_name": "Công ty CP Nông sản Việt",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000017",
+      "invoice_date": "2026-11-09",
+      "subtotal": 8500000.0,
+      "vat_amount": 850000.0,
+      "total_amount": 9350000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000018.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000018",
+      "supplier_name": "Công ty TNHH Cơ khí Tiến Đạt",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000018",
+      "invoice_date": "2026-11-10",
+      "subtotal": 11500000.0,
+      "vat_amount": 1150000.0,
+      "total_amount": 12650000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000019.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000019",
+      "supplier_name": "Công ty TNHH Dịch vụ Bảo Minh",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000019",
+      "invoice_date": "2026-11-10",
+      "subtotal": 5000000.0,
+      "vat_amount": 500000.0,
+      "total_amount": 5500000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000020.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000020",
+      "supplier_name": "Công ty CP Phát triển Hoàng Phúc",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000020",
+      "invoice_date": "2026-11-11",
+      "subtotal": 17000000.0,
+      "vat_amount": 1700000.0,
+      "total_amount": 18700000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000021.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000021",
+      "supplier_name": "Công ty TNHH Thương mại Kim Ngân",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000021",
+      "invoice_date": "2026-11-11",
+      "subtotal": 6000000.0,
+      "vat_amount": 600000.0,
+      "total_amount": 6600000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000022.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000022",
+      "supplier_name": "Công ty TNHH Giải pháp Số Việt",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000022",
+      "invoice_date": "2026-11-12",
+      "subtotal": 20000000.0,
+      "vat_amount": 2000000.0,
+      "total_amount": 22000000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000023.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000023",
+      "supplier_name": "Công ty CP Đầu tư Phú Thành",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000023",
+      "invoice_date": "2026-11-12",
+      "subtotal": 12500000.0,
+      "vat_amount": 1250000.0,
+      "total_amount": 13750000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000024.pdf",
+    "expected": {
+      "supplier_tax_id": "9900000001",
+      "supplier_name": "Công ty TNHH Thương mại Hoàng Gia",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000024",
+      "invoice_date": "2026-11-01",
+      "subtotal": 8000000.0,
+      "vat_amount": 800000.0,
+      "total_amount": 8800000.0,
+      "suggested_account": "642"
+    }
+  },
+  {
+    "file_path": "backend/uploads/mock_invoices/HD_000025.pdf",
+    "expected": {
+      "supplier_tax_id": "9999999999",
+      "supplier_name": "Công ty TNHH Xuất nhập khẩu Thành Đạt",
+      "buyer_tax_id": "0319002001",
+      "buyer_name": "Công ty TNHH Một thành viên Minh Software",
+      "invoice_number": "000025",
+      "invoice_date": "2026-11-13",
+      "subtotal": 9000000.0,
+      "vat_amount": 900000.0,
+      "total_amount": 9900000.0,
+      "suggested_account": "642"
     }
   }
 ]
-'''
