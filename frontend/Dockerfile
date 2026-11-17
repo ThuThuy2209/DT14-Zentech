@@ -1,16 +1,24 @@
-FROM node:20-alpine
+# ---- Stage 1: Build ----
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package.json và cài thư viện
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
-# Copy toàn bộ code
 COPY . .
 
-# Mở cổng cho Vite
+RUN npm run build
+
+# ---- Stage 2: Production (nginx serve static) ----
+FROM nginx:alpine AS production
+
+# Copy static files từ build
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Config nginx để React Router hoạt động (SPA fallback)
+RUN printf 'server {\n    listen 3000;\n    root /usr/share/nginx/html;\n    index index.html;\n    location / {\n        try_files $uri $uri/ /index.html;\n    }\n}\n' > /etc/nginx/conf.d/default.conf
+
 EXPOSE 3000
 
-# Chạy Vite dev server lắng nghe từ bên ngoài (0.0.0.0)
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
+CMD ["nginx", "-g", "daemon off;"]
