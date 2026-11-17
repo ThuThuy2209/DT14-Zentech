@@ -1,0 +1,22 @@
+'''json
+[
+  {
+    "file_path": "samples/invoice1.pdf",
+    "expected": {
+      "supplier_tax_id": "0101234567",
+      "supplier_name": "Công ty TNHH Thiết bị Văn phòng MISA",
+      "buyer_tax_id": "9900000002",
+      "buyer_name": "Công ty CP Công nghệ Đại Việt",
+      "invoice_number": "0000001",
+      "invoice_date": "2026-11-02",
+      "subtotal": 15000000.0,
+      "vat_amount": 1500000.0,
+      "total_amount": 16500000.0,
+      "items": [],
+      "suggested_account": "642",
+      "accounting_reason": "",
+      "flags": []
+    }
+  }
+]
+'''
