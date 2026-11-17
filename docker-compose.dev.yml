@@ -1,0 +1,37 @@
+# docker-compose.dev.yml
+# Dùng khi code development: chỉ chạy PostgreSQL bằng Docker
+# Backend / Frontend / AI Service chạy native trên máy (npm run start:dev)
+#
+# --- Lần đầu setup ---
+# Khởi động DB      : docker compose -f docker-compose.dev.yml up -d
+# Apply schema      : npx prisma migrate dev  (chạy trong thư mục backend/)
+# Sinh data mẫu     : npm run db:seed         (chạy trong thư mục backend/)
+#
+# --- Hàng ngày ---
+# Bật DB            : docker compose -f docker-compose.dev.yml up -d
+# Tắt DB            : docker compose -f docker-compose.dev.yml down
+# Xem log DB        : docker compose -f docker-compose.dev.yml logs -f postgres
+# Thêm migration    : npx prisma migrate dev --name ten_thay_doi
+
+name: opc-smartoffice
+
+services:
+  postgres:
+    image: postgres:16.10-alpine
+    container_name: opc_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-opc_smartoffice}
+      POSTGRES_USER: ${DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres123}
+      TZ: Asia/Ho_Chi_Minh
+      PGTZ: Asia/Ho_Chi_Minh
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
+    driver: local
+    name: opc_postgres_data

@@ -13,6 +13,7 @@ ReceivablesModule = __decorate([
     Module({
         controllers: [ReceivablesController],
         providers: [ReceivablesService],
+        exports: [ReceivablesService],
     })
 ], ReceivablesModule);
 export { ReceivablesModule };

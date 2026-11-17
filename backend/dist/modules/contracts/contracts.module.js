@@ -13,6 +13,7 @@ ContractsModule = __decorate([
     Module({
         controllers: [ContractsController],
         providers: [ContractsService],
+        exports: [ContractsService],
     })
 ], ContractsModule);
 export { ContractsModule };
