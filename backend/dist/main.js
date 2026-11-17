@@ -1,7 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { join } from 'path';
 import { AppModule, ObserveInstrument } from './app.module.js';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter.js';
+BigInt.prototype.toJSON = function () {
+    const intVal = Number(this);
+    return Number.isSafeInteger(intVal) ? intVal : this.toString();
+};
 async function bootstrap() {
     const app = await NestFactory.create(AppModule, {
         instrument: ObserveInstrument,
@@ -9,6 +14,9 @@ async function bootstrap() {
     app.enableCors({
         origin: true,
         credentials: true,
+    });
+    app.useStaticAssets(join(process.cwd(), 'uploads'), {
+        prefix: '/uploads/',
     });
     app.setGlobalPrefix('api/v1');
     app.useGlobalPipes(new ValidationPipe({

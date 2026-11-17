@@ -63,5 +63,9 @@ generated/
 skills-lock.json
 
 
+# Uploads
+backend/uploads/documents/*
+!backend/uploads/documents/.gitkeep
+
 dist
 *.tsbuildinfo
