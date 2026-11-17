@@ -6,10 +6,10 @@ export declare class CustomersService {
     private readonly prisma;
     constructor(prisma: PrismaService);
     create(createCustomerDto: CreateCustomerDto): Promise<{
+        id: number;
         email: string | null;
         status: string;
         createdAt: Date;
-        id: number;
         taxCode: string | null;
         address: string | null;
         phone: string | null;
@@ -19,15 +19,15 @@ export declare class CustomersService {
     findAll(query: FilterCustomerDto): Promise<{
         items: ({
             _count: {
-                quotations: number;
                 contracts: number;
                 salesInvoices: number;
+                quotations: number;
             };
         } & {
+            id: number;
             email: string | null;
             status: string;
             createdAt: Date;
-            id: number;
             taxCode: string | null;
             address: string | null;
             phone: string | null;
@@ -41,15 +41,15 @@ export declare class CustomersService {
     }>;
     findOne(id: number): Promise<{
         _count: {
-            quotations: number;
             contracts: number;
             salesInvoices: number;
+            quotations: number;
         };
     } & {
+        id: number;
         email: string | null;
         status: string;
         createdAt: Date;
-        id: number;
         taxCode: string | null;
         address: string | null;
         phone: string | null;
@@ -57,10 +57,10 @@ export declare class CustomersService {
         contactPerson: string | null;
     }>;
     update(id: number, updateCustomerDto: UpdateCustomerDto): Promise<{
+        id: number;
         email: string | null;
         status: string;
         createdAt: Date;
-        id: number;
         taxCode: string | null;
         address: string | null;
         phone: string | null;
