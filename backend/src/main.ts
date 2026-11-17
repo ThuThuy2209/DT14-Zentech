@@ -1,10 +1,18 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 import { AppModule, ObserveInstrument } from './app.module.js';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter.js';
 
+// Fix serialization lỗi: "Do not know how to serialize a BigInt" cho toàn ứng dụng
+(BigInt.prototype as any).toJSON = function () {
+  const intVal = Number(this);
+  return Number.isSafeInteger(intVal) ? intVal : this.toString();
+};
+
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     instrument: ObserveInstrument,
   });
 
@@ -14,10 +22,15 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // 2. Set global prefix api/v1
+  // 2. Phục vụ tệp tĩnh (PDF, ảnh hóa đơn) cho Frontend xem trực tiếp
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/uploads/',
+  });
+
+  // 3. Set global prefix api/v1
   app.setGlobalPrefix('api/v1');
 
-  // 3. Global validation pipe
+  // 4. Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -25,7 +38,7 @@ async function bootstrap() {
     }),
   );
 
-  // 4. Standard Exception Filter
+  // 5. Standard Exception Filter
   app.useGlobalFilters(new AllExceptionsFilter());
 
   const port = process.env.PORT ?? 8080;

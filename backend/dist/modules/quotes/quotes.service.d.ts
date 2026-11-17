@@ -7,9 +7,9 @@ export declare class QuotesService {
     private readonly prisma;
     constructor(prisma: PrismaService);
     getServices(): Promise<{
+        id: number;
         status: string;
         createdAt: Date;
-        id: number;
         serviceName: string;
         description: string | null;
         unit: string | null;
@@ -17,17 +17,17 @@ export declare class QuotesService {
     }[]>;
     create(createQuoteDto: CreateQuoteDto, userId?: number): Promise<{
         customer: {
-            email: string | null;
             id: number;
+            email: string | null;
             taxCode: string | null;
             phone: string | null;
             customerName: string;
         };
         items: ({
             service: {
+                id: number;
                 status: string;
                 createdAt: Date;
-                id: number;
                 serviceName: string;
                 description: string | null;
                 unit: string | null;
@@ -37,54 +37,54 @@ export declare class QuotesService {
             id: number;
             description: string | null;
             unitPrice: import("@prisma/client-runtime-utils").Decimal;
+            discountAmount: import("@prisma/client-runtime-utils").Decimal;
+            quotationId: number;
             serviceId: number | null;
             quantity: import("@prisma/client-runtime-utils").Decimal;
-            discountAmount: import("@prisma/client-runtime-utils").Decimal;
             taxRate: import("@prisma/client-runtime-utils").Decimal | null;
             lineTotal: import("@prisma/client-runtime-utils").Decimal;
-            quotationId: number;
         })[];
     } & {
-        status: string;
+        totalAmount: import("@prisma/client-runtime-utils").Decimal;
         id: number;
-        discountAmount: import("@prisma/client-runtime-utils").Decimal;
-        customerId: number;
+        status: string;
         quotationCode: string;
+        customerId: number;
         createdDate: Date;
         validUntil: Date | null;
-        note: string | null;
         subtotal: import("@prisma/client-runtime-utils").Decimal;
+        discountAmount: import("@prisma/client-runtime-utils").Decimal;
         taxAmount: import("@prisma/client-runtime-utils").Decimal;
-        totalAmount: import("@prisma/client-runtime-utils").Decimal;
+        note: string | null;
     }>;
     findAll(query: FilterQuoteDto): Promise<{
         items: ({
+            _count: {
+                items: number;
+            };
             customer: {
-                email: string | null;
                 id: number;
+                email: string | null;
                 phone: string | null;
                 customerName: string;
             };
             contract: {
-                status: string;
                 id: number;
+                status: string;
                 contractCode: string;
             } | null;
-            _count: {
-                items: number;
-            };
         } & {
-            status: string;
+            totalAmount: import("@prisma/client-runtime-utils").Decimal;
             id: number;
-            discountAmount: import("@prisma/client-runtime-utils").Decimal;
-            customerId: number;
+            status: string;
             quotationCode: string;
+            customerId: number;
             createdDate: Date;
             validUntil: Date | null;
-            note: string | null;
             subtotal: import("@prisma/client-runtime-utils").Decimal;
+            discountAmount: import("@prisma/client-runtime-utils").Decimal;
             taxAmount: import("@prisma/client-runtime-utils").Decimal;
-            totalAmount: import("@prisma/client-runtime-utils").Decimal;
+            note: string | null;
         })[];
         total: number;
         page: number;
@@ -93,10 +93,10 @@ export declare class QuotesService {
     }>;
     findOne(id: number): Promise<{
         customer: {
+            id: number;
             email: string | null;
             status: string;
             createdAt: Date;
-            id: number;
             taxCode: string | null;
             address: string | null;
             phone: string | null;
@@ -104,16 +104,16 @@ export declare class QuotesService {
             contactPerson: string | null;
         };
         contract: {
-            status: string;
             id: number;
+            status: string;
             contractCode: string;
             contractName: string;
         } | null;
         items: ({
             service: {
+                id: number;
                 status: string;
                 createdAt: Date;
-                id: number;
                 serviceName: string;
                 description: string | null;
                 unit: string | null;
@@ -123,32 +123,32 @@ export declare class QuotesService {
             id: number;
             description: string | null;
             unitPrice: import("@prisma/client-runtime-utils").Decimal;
+            discountAmount: import("@prisma/client-runtime-utils").Decimal;
+            quotationId: number;
             serviceId: number | null;
             quantity: import("@prisma/client-runtime-utils").Decimal;
-            discountAmount: import("@prisma/client-runtime-utils").Decimal;
             taxRate: import("@prisma/client-runtime-utils").Decimal | null;
             lineTotal: import("@prisma/client-runtime-utils").Decimal;
-            quotationId: number;
         })[];
     } & {
-        status: string;
+        totalAmount: import("@prisma/client-runtime-utils").Decimal;
         id: number;
-        discountAmount: import("@prisma/client-runtime-utils").Decimal;
-        customerId: number;
+        status: string;
         quotationCode: string;
+        customerId: number;
         createdDate: Date;
         validUntil: Date | null;
-        note: string | null;
         subtotal: import("@prisma/client-runtime-utils").Decimal;
+        discountAmount: import("@prisma/client-runtime-utils").Decimal;
         taxAmount: import("@prisma/client-runtime-utils").Decimal;
-        totalAmount: import("@prisma/client-runtime-utils").Decimal;
+        note: string | null;
     }>;
     update(id: number, updateQuoteDto: UpdateQuoteDto, userId?: number): Promise<{
         customer: {
+            id: number;
             email: string | null;
             status: string;
             createdAt: Date;
-            id: number;
             taxCode: string | null;
             address: string | null;
             phone: string | null;
@@ -159,32 +159,32 @@ export declare class QuotesService {
             id: number;
             description: string | null;
             unitPrice: import("@prisma/client-runtime-utils").Decimal;
+            discountAmount: import("@prisma/client-runtime-utils").Decimal;
+            quotationId: number;
             serviceId: number | null;
             quantity: import("@prisma/client-runtime-utils").Decimal;
-            discountAmount: import("@prisma/client-runtime-utils").Decimal;
             taxRate: import("@prisma/client-runtime-utils").Decimal | null;
             lineTotal: import("@prisma/client-runtime-utils").Decimal;
-            quotationId: number;
         }[];
     } & {
-        status: string;
+        totalAmount: import("@prisma/client-runtime-utils").Decimal;
         id: number;
-        discountAmount: import("@prisma/client-runtime-utils").Decimal;
-        customerId: number;
+        status: string;
         quotationCode: string;
+        customerId: number;
         createdDate: Date;
         validUntil: Date | null;
-        note: string | null;
         subtotal: import("@prisma/client-runtime-utils").Decimal;
+        discountAmount: import("@prisma/client-runtime-utils").Decimal;
         taxAmount: import("@prisma/client-runtime-utils").Decimal;
-        totalAmount: import("@prisma/client-runtime-utils").Decimal;
+        note: string | null;
     }>;
     updateStatus(id: number, dto: UpdateQuoteStatusDto, userId?: number): Promise<{
         customer: {
+            id: number;
             email: string | null;
             status: string;
             createdAt: Date;
-            id: number;
             taxCode: string | null;
             address: string | null;
             phone: string | null;
@@ -195,25 +195,25 @@ export declare class QuotesService {
             id: number;
             description: string | null;
             unitPrice: import("@prisma/client-runtime-utils").Decimal;
+            discountAmount: import("@prisma/client-runtime-utils").Decimal;
+            quotationId: number;
             serviceId: number | null;
             quantity: import("@prisma/client-runtime-utils").Decimal;
-            discountAmount: import("@prisma/client-runtime-utils").Decimal;
             taxRate: import("@prisma/client-runtime-utils").Decimal | null;
             lineTotal: import("@prisma/client-runtime-utils").Decimal;
-            quotationId: number;
         }[];
     } & {
-        status: string;
+        totalAmount: import("@prisma/client-runtime-utils").Decimal;
         id: number;
-        discountAmount: import("@prisma/client-runtime-utils").Decimal;
-        customerId: number;
+        status: string;
         quotationCode: string;
+        customerId: number;
         createdDate: Date;
         validUntil: Date | null;
-        note: string | null;
         subtotal: import("@prisma/client-runtime-utils").Decimal;
+        discountAmount: import("@prisma/client-runtime-utils").Decimal;
         taxAmount: import("@prisma/client-runtime-utils").Decimal;
-        totalAmount: import("@prisma/client-runtime-utils").Decimal;
+        note: string | null;
     }>;
     sendQuote(id: number, userId?: number): Promise<{
         quotationCode: string;
@@ -222,34 +222,34 @@ export declare class QuotesService {
         sentAt: Date;
     }>;
     convertToContract(id: number, userId?: number): Promise<{
+        id: number;
+        documentId: number | null;
         status: string;
         createdAt: Date;
-        id: number;
         customerId: number;
-        contractCode: string;
         quotationId: number | null;
+        contractCode: string;
         templateVersionId: number | null;
         contractName: string;
         contractValue: import("@prisma/client-runtime-utils").Decimal;
         startDate: Date | null;
         endDate: Date | null;
         contractContent: string | null;
-        documentId: number | null;
     }>;
     getHistory(id: number): Promise<({
         user: {
+            id: number;
             username: string;
             fullName: string;
-            id: number;
         } | null;
     } & {
-        createdAt: Date;
         id: number;
+        createdAt: Date;
         description: string | null;
+        userId: number | null;
         action: string;
         entityType: string | null;
         entityId: number | null;
-        userId: number | null;
     })[]>;
     remove(id: number, userId?: number): Promise<{
         message: string;

@@ -9,10 +9,10 @@ export declare class CustomersController {
         success: boolean;
         message: string;
         data: {
+            id: number;
             email: string | null;
             status: string;
             createdAt: Date;
-            id: number;
             taxCode: string | null;
             address: string | null;
             phone: string | null;
@@ -26,15 +26,15 @@ export declare class CustomersController {
         data: {
             items: ({
                 _count: {
-                    quotations: number;
                     contracts: number;
                     salesInvoices: number;
+                    quotations: number;
                 };
             } & {
+                id: number;
                 email: string | null;
                 status: string;
                 createdAt: Date;
-                id: number;
                 taxCode: string | null;
                 address: string | null;
                 phone: string | null;
@@ -52,15 +52,15 @@ export declare class CustomersController {
         message: string;
         data: {
             _count: {
-                quotations: number;
                 contracts: number;
                 salesInvoices: number;
+                quotations: number;
             };
         } & {
+            id: number;
             email: string | null;
             status: string;
             createdAt: Date;
-            id: number;
             taxCode: string | null;
             address: string | null;
             phone: string | null;
@@ -72,10 +72,10 @@ export declare class CustomersController {
         success: boolean;
         message: string;
         data: {
+            id: number;
             email: string | null;
             status: string;
             createdAt: Date;
-            id: number;
             taxCode: string | null;
             address: string | null;
             phone: string | null;
