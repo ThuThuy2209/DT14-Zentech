@@ -63,19 +63,19 @@ export const CustomersView: React.FC = () => {
   const [contracts, setContracts] = useState<Contract[]>([
     {
       id: '1',
-      code: 'HĐ-05/2026/MS-VNPT',
+      code: 'HĐ-04/2026/MS-VNPT',
       customerName: 'Công ty TNHH Dịch vụ An Khang',
       taxId: '9900000004',
       representative: 'Nguyễn Văn An',
       phone: '028 3500 0004',
       email: 'muahang04@company.example',
-      service: 'Bảo trì hệ thống Cloud & Server 12 tháng',
-      value: 45000000,
-      paid: 22500000,
-      debt: 22500000,
+      service: 'Bảo trì hệ thống phần mềm 3 tháng',
+      value: 6600000,
+      paid: 4000000,
+      debt: 2600000,
       status: 'cho_duyet',
       statusText: 'Chờ duyệt điều khoản & Ký số',
-      createdAt: '18/02/2026',
+      createdAt: '03/11/2026',
       milestone: {
         name: 'Giai đoạn 1: Thiết lập hạ tầng',
         percent: 50,
@@ -85,19 +85,19 @@ export const CustomersView: React.FC = () => {
     },
     {
       id: '2',
-      code: 'HĐ-06/2026/MS-FPT',
-      customerName: 'Công ty TNHH Giải pháp Số An Phát',
+      code: 'HĐ-22/2026/MS-FPT',
+      customerName: 'Công ty TNHH Giải pháp Số Việt',
       taxId: '9900000022',
       representative: 'Nguyễn Văn An',
       phone: '028 3500 0022',
       email: 'muahang22@company.example',
-      service: 'Cung cấp bản quyền phần mềm quản lý kho',
+      service: 'Tư vấn chuyển đổi số',
       value: 22000000,
       paid: 0,
       debt: 22000000,
       status: 'cho_duyet',
       statusText: 'Chờ duyệt nghiệm thu Giai đoạn 1',
-      createdAt: '19/02/2026',
+      createdAt: '12/11/2026',
       milestone: {
         name: 'Nghiệm thu phần mềm kho',
         percent: 60,
@@ -107,19 +107,19 @@ export const CustomersView: React.FC = () => {
     },
     {
       id: '3',
-      code: 'HĐ-02/2026/MS-ABC',
-      customerName: 'Công ty CP Giải pháp Công nghệ ABC',
-      taxId: '0108899881',
+      code: 'HĐ-02/2026/MS-ĐV',
+      customerName: 'Công ty CP Công nghệ Đại Việt',
+      taxId: '9900000002',
       representative: 'Nguyễn Văn An',
-      phone: '0912 345 678',
-      email: 'contact@abctech.vn',
+      phone: '028 3500 0004',
+      email: 'muahang02@company.example',
       service: 'Phát triển phần mềm quản lý',
-      value: 30000000,
+      value: 16500000,
       paid: 12000000,
-      debt: 18000000,
+      debt: 4500000,
       status: 'dang_thuc_hien',
       statusText: 'Đang triển khai - Quá hạn 30 ngày',
-      createdAt: '15/01/2026',
+      createdAt: '02/11/2026',
       milestone: {
         name: 'Đợt 1: Nghiệm thu hoàn tất 100%',
         percent: 100,
@@ -140,7 +140,7 @@ export const CustomersView: React.FC = () => {
       debt: 0,
       status: 'hoan_tat',
       statusText: 'Đã quyết toán đủ 100%',
-      createdAt: '03/01/2026',
+      createdAt: '01/11/2026',
       milestone: {
         name: 'Bàn giao & Nghiệm thu 100%',
         percent: 100,
@@ -149,23 +149,23 @@ export const CustomersView: React.FC = () => {
     },
     {
       id: '5',
-      code: 'HĐ-03/2026/MS-DV',
-      customerName: 'Công ty CP Công nghệ Đại Việt',
-      taxId: '9900000002',
+      code: 'HĐ-05/2026/MS-TC',
+      customerName: 'Công ty CP Đầu tư Thành Công',
+      taxId: '9900000005',
       representative: 'Nguyễn Văn An',
-      phone: '028 3500 0002',
-      email: 'muahang02@company.example',
-      service: 'Phát triển phần mềm quản lý',
-      value: 16500000,
-      paid: 8250000,
-      debt: 8250000,
+      phone: '028 3500 0005',
+      email: 'muahang05@company.example',
+      service: 'Phần mềm quản lý nhân sự',
+      value: 13200000,
+      paid: 8200000,
+      debt: 5000000,
       status: 'dang_thuc_hien',
       statusText: 'Đang chạy thử nghiệm',
-      createdAt: '22/01/2026',
+      createdAt: '03/11/2026',
       milestone: {
         name: 'Giai đoạn 2: Đang chạy thử nghiệm 60%',
         percent: 60,
-        subtext: 'Hạn chót: 28/02/2026'
+        subtext: 'Hạn chót: 03/12/2026'
       }
     },
     {
@@ -182,7 +182,7 @@ export const CustomersView: React.FC = () => {
       debt: 10450000,
       status: 'cho_nghiem_thu',
       statusText: 'Đã duyệt wireframe',
-      createdAt: '02/02/2026',
+      createdAt: '02/11/2026',
       milestone: {
         name: 'Giai đoạn 1: Đã duyệt wireframe 25%',
         percent: 25,
@@ -382,14 +382,14 @@ export const CustomersView: React.FC = () => {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-blue-700">HĐ-05/2026/MS-VNPT</span>
+                  <span className="text-xs font-bold text-blue-700">HĐ-04/2026/MS-VNPT</span>
                   <span className="text-xs font-bold text-slate-900">• Công ty TNHH Dịch vụ An Khang</span>
                   <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded font-semibold border border-amber-200">
                     Chờ duyệt điều khoản & Ký số
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 mt-1">
-                  Dịch vụ: Bảo trì hệ thống Cloud & Server 12 tháng • Giá trị: <span className="font-bold text-slate-900">45.000.000 đ</span> • Ngày tạo: 18/02/2026
+                  Dịch vụ: Bảo trì hệ thống phần mềm • Giá trị: <span className="font-bold text-slate-900">6.600.000 đ</span> • Ngày tạo: 03/11/2026
                 </p>
                 <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-100">
                   <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -422,14 +422,14 @@ export const CustomersView: React.FC = () => {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-blue-700">HĐ-06/2026/MS-FPT</span>
-                  <span className="text-xs font-bold text-slate-900">• Công ty TNHH Giải pháp Số An Phát</span>
+                  <span className="text-xs font-bold text-blue-700">HĐ-22/2026/MS-FPT</span>
+                  <span className="text-xs font-bold text-slate-900">• Công ty TNHH Giải pháp Số Việt</span>
                   <span className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-semibold border border-blue-200">
                     Chờ duyệt nghiệm thu Giai đoạn 1
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 mt-1">
-                  Dịch vụ: Cung cấp bản quyền phần mềm quản lý kho • Giá trị: <span className="font-bold text-slate-900">22.000.000 đ</span> • Ngày tạo: 19/02/2026
+                  Dịch vụ: Tư vấn chuyển đổi số • Giá trị: <span className="font-bold text-slate-900">22.000.000 đ</span> • Ngày tạo: 12/11/2026
                 </p>
                 <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
                   <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
@@ -612,7 +612,7 @@ export const CustomersView: React.FC = () => {
         </div>
       </div>
 
-      {/* 6. MODAL 1: PHÊ DUYỆT & KÝ SỐ HỢP ĐỒNG (Ảnh Stitch số 10) */}
+      {/* 6. MODAL 1: PHÊ DUYỆT & KÝ SỐ HỢP ĐỒNG  */}
       {selectedContractForSign && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
