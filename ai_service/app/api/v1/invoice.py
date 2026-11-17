@@ -51,7 +51,16 @@ async def extract_invoice(file: UploadFile = File(...)):
         invoice_data = structured_data.model_dump()
 
         # 4. Kiểm tra tự động các cờ cảnh báo bất thường (flags)
+        # 4. Kiểm tra bất thường: duplicate detection
+        from app.services.anomaly_detector import detect_duplicate
+        duplicate_flags = detect_duplicate(
+            supplier_tax_id=structured_data.supplier_tax_id,
+            invoice_number=structured_data.invoice_number,
+            invoice_date=structured_data.invoice_date,
+        )
         flags = set(invoice_data.get("flags") or [])
+        flags.update(duplicate_flags)
+
 
         # Cảnh báo 1: Sai lệch số học (Tiền hàng + Thuế != Tổng tiền)
         expected_total = structured_data.subtotal + structured_data.vat_amount

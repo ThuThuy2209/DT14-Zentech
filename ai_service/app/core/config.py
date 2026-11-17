@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     USE_MOCK_AI: bool = False
 
     # Thông tin định danh doanh nghiệp Minh Software (để AI đối chiếu)
-    COMPANY_TAX_ID: str = "0318888888"
+    COMPANY_TAX_ID: str = "0319002001"
     COMPANY_NAME: str = "Công ty TNHH Một thành viên Minh Software"
     OVERDUE_DAYS_THRESHOLD: int = 30  # Mốc cảnh báo công nợ quá hạn (ngày)
 
