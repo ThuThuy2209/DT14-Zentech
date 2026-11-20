@@ -15,6 +15,8 @@ from app.schemas.agent import (
     ReminderEmailData,
     ChatRequest,
     ChatResponseData,
+    WeeklySummaryRequest,
+    WeeklySummaryResponseData,
 )
 
 _client = None
@@ -609,4 +611,177 @@ def chat_with_assistant(request: ChatRequest) -> ChatResponseData:
 
     # Nếu gọi Gemini thất bại do mạng hoặc quá tải -> kích hoạt phản hồi dự phòng
     return get_mock_chat_response(user_query, request.business_context)
+
+
+# ============================================================================
+# TÓM TẮT TÌNH HÌNH TÀI CHÍNH TUẦN (BR-AI-07, BR-AI-10)
+# ============================================================================
+
+def get_mock_weekly_summary(request: WeeklySummaryRequest) -> WeeklySummaryResponseData:
+    """
+    Tạo báo cáo tóm tắt tài chính tuần dự phòng (rule-based mock)
+    khi không kết nối được Gemini hoặc đang ở chế độ thử nghiệm nội bộ.
+    """
+    period = request.period or "Tuần này"
+    revenue = float(request.total_revenue)
+    expense = float(request.total_expense)
+    net_flow = request.net_cashflow if request.net_cashflow is not None else (revenue - expense)
+
+    # Tính tỷ suất lợi nhuận gộp tạm tính
+    margin_str = f"{(net_flow / revenue * 100):.1f}%" if revenue > 0 else "0.0%"
+
+    risks: list[str] = []
+    actions: list[str] = []
+
+    # Đánh giá công nợ quá hạn
+    overdue_count = len(request.overdue_receivables or [])
+    total_overdue_amount = sum(item.amount for item in (request.overdue_receivables or []))
+    if overdue_count > 0:
+        names = ", ".join(item.customer_name for item in request.overdue_receivables[:2])
+        risks.append(
+            f"Phát hiện {overdue_count} khoản công nợ quá hạn với tổng số tiền {total_overdue_amount:,.0f} VNĐ ({names})."
+        )
+        actions.append(
+            f"Phê duyệt gửi bản nháp email nhắc nợ (BR-AI-06) cho các khách hàng quá hạn trên 30 ngày."
+        )
+
+    # Đánh giá nghĩa vụ thuế / BHXH sắp tới
+    obligations = request.upcoming_obligations or []
+    if obligations:
+        for ob in obligations:
+            amt_info = f" (dự kiến {ob.estimated_amount:,.0f} VNĐ)" if ob.estimated_amount else ""
+            risks.append(f"Nghĩa vụ sắp đến hạn: {ob.title} trước ngày {ob.deadline}{amt_info}.")
+        actions.append("Dự trù số dư thanh khoản ngân hàng để hoàn thành các nghĩa vụ thuế, bảo hiểm đúng hạn.")
+
+    if net_flow < 0:
+        risks.append("Dòng tiền tuần này đang âm (Chi phí vượt Doanh thu). Cần kiểm soát chi phí mua sắm ngoài kế hoạch.")
+        actions.append("Rà soát lại các hóa đơn đầu vào có giá trị lớn trong tuần để tối ưu chi phí.")
+
+    if not risks:
+        risks.append("Chưa phát hiện rủi ro tài chính hoặc công nợ đáng kể trong tuần.")
+    if not actions:
+        actions.append("Tiếp tục theo dõi tiến độ thu tiền từ khách hàng và kiểm tra đối chiếu hóa đơn đầu vào.")
+
+    # Tạo tóm tắt điều hành
+    if net_flow >= 0:
+        exec_summary = (
+            f"Tình hình tài chính trong {period} duy trì trạng thái tích cực với dòng tiền ròng dương "
+            f"{net_flow:,.0f} VNĐ (tỷ suất đạt {margin_str}). Doanh thu đạt {revenue:,.0f} VNĐ và chi phí "
+            f"được kiểm soát ở mức {expense:,.0f} VNĐ. "
+        )
+    else:
+        exec_summary = (
+            f"Trong {period}, tổng chi phí ({expense:,.0f} VNĐ) đã vượt doanh thu ({revenue:,.0f} VNĐ), "
+            f"khiến dòng tiền ròng âm {abs(net_flow):,.0f} VNĐ. "
+        )
+
+    if overdue_count > 0:
+        exec_summary += f"Cần ưu tiên đôn đốc thu hồi {total_overdue_amount:,.0f} VNĐ nợ quá hạn để đảm bảo thanh khoản."
+    else:
+        exec_summary += "Hệ thống ghi nhận không có công nợ quá hạn nghiêm trọng."
+
+    return WeeklySummaryResponseData(
+        period=period,
+        executive_summary=exec_summary,
+        key_metrics={
+            "total_revenue": revenue,
+            "total_expense": expense,
+            "net_cashflow": net_flow,
+            "profit_margin": margin_str,
+            "overdue_count": overdue_count,
+            "overdue_total_amount": total_overdue_amount,
+        },
+        risks_and_alerts=risks,
+        action_recommendations=actions,
+        disclaimer=(
+            "Lưu ý (FR-107): Báo cáo tóm tắt được khởi tạo tự động bởi AI nhằm mục đích tham khảo hỗ trợ quản trị, "
+            "không thay thế cho báo cáo tài chính chính thức."
+        ),
+        audit_explanation=(
+            "AI Agent tự động phân tích dòng tiền tuần, cảnh báo công nợ quá hạn và nghĩa vụ thuế "
+            "tuân thủ quy tắc nghiệp vụ BR-AI-07 và BR-AI-10."
+        ),
+    )
+
+
+def generate_weekly_financial_summary(request: WeeklySummaryRequest) -> WeeklySummaryResponseData:
+    """
+    Gọi Gemini API để đóng vai trò Giám đốc tài chính (Virtual CFO) phân tích và tóm tắt
+    tình hình tài chính tuần, phát hiện rủi ro và đưa ra đề xuất hành động theo BR-AI-07.
+    Tự động fallback về mock rule-based nếu Gemini không khả dụng.
+    """
+    if getattr(settings, "AI_USE_MOCK", False):
+        return get_mock_weekly_summary(request)
+
+    period = request.period or "Tuần này"
+    revenue = float(request.total_revenue)
+    expense = float(request.total_expense)
+    net_flow = request.net_cashflow if request.net_cashflow is not None else (revenue - expense)
+
+    overdue_info = []
+    for it in (request.overdue_receivables or []):
+        overdue_info.append(
+            f"- Khách hàng: {it.customer_name}, HĐ: {it.invoice_no or 'N/A'}, Số tiền: {it.amount:,.0f} VNĐ, Quá hạn: {it.overdue_days} ngày"
+        )
+    overdue_text = "\n".join(overdue_info) if overdue_info else "Không có khoản nợ quá hạn."
+
+    obligation_info = []
+    for ob in (request.upcoming_obligations or []):
+        obligation_info.append(
+            f"- Nghĩa vụ: {ob.title}, Hạn chót: {ob.deadline}, Số tiền ước tính: {ob.estimated_amount:,.0f} VNĐ"
+        )
+    obligation_text = "\n".join(obligation_info) if obligation_info else "Không có nghĩa vụ thuế/BHXH sắp đến hạn."
+
+    prompt = f"""
+    Bạn là Giám đốc Tài chính Ảo (Virtual CFO) kiêm Chuyên gia Kế toán của Doanh nghiệp một thành viên ({settings.COMPANY_NAME}).
+    Nhiệm vụ của bạn là tổng hợp và viết Bản Tóm Tắt Tình Hình Tài Chính Tuần (BR-AI-07) gửi cho Chủ Doanh nghiệp.
+
+    DỮ LIỆU SỐ LIỆU TÀI CHÍNH ĐẦU VÀO TRONG {period}:
+    - Tổng Doanh thu trong tuần: {revenue:,.0f} VNĐ
+    - Tổng Chi phí (hóa đơn mua vào): {expense:,.0f} VNĐ
+    - Dòng tiền ròng (Net Cashflow): {net_flow:,.0f} VNĐ
+    - Tình hình công nợ khách hàng quá hạn:
+    {overdue_text}
+    - Các nghĩa vụ thuế & bảo hiểm sắp đến hạn:
+    {obligation_text}
+
+    YÊU CẦU TRẢ VỀ:
+    1. executive_summary: Viết đoạn nhận định ngắn gọn (3-4 câu), nêu bật sức khỏe tài chính, dòng tiền và điểm cần lưu ý nhất.
+    2. key_metrics: Dict gồm total_revenue, total_expense, net_cashflow, profit_margin.
+    3. risks_and_alerts: Mảng các chuỗi cảnh báo cụ thể (nợ quá hạn > 30 ngày, nguy cơ thâm hụt tiền mặt, hạn thuế).
+    4. action_recommendations: Mảng các hành động đề xuất cụ thể (ví dụ: duyệt gửi email nhắc nợ hóa đơn cụ thể, trích quỹ đóng thuế).
+    5. disclaimer: Giữ nguyên câu cảnh báo FR-107.
+    6. audit_explanation: Giải thích tóm tắt logic AI phân tích đề xuất (BR-AI-10).
+    """
+
+    models_to_try = [
+        settings.DEFAULT_LLM_MODEL,
+        "gemini-3.8-flash",
+    ]
+    models_to_try = list(dict.fromkeys(models_to_try))
+
+    try:
+        client = get_genai_client()
+        for model_name in models_to_try:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        response_schema=WeeklySummaryResponseData,
+                        temperature=0.3,
+                    ),
+                )
+                if response and response.text:
+                    cleaned_text = clean_json_response(response.text)
+                    data = WeeklySummaryResponseData.model_validate_json(cleaned_text)
+                    return data
+            except Exception:
+                continue
+    except Exception:
+        pass
+
+    return get_mock_weekly_summary(request)
+
 
