@@ -1,7 +1,15 @@
 from fastapi import APIRouter
 from app.core.response import success_response, error_response
-from app.schemas.agent import ReminderEmailRequest, ChatRequest
-from app.services.ai_agent import generate_reminder_email, chat_with_assistant
+from app.schemas.agent import (
+    ReminderEmailRequest,
+    ChatRequest,
+    WeeklySummaryRequest,
+)
+from app.services.ai_agent import (
+    generate_reminder_email,
+    chat_with_assistant,
+    generate_weekly_financial_summary,
+)
 
 router = APIRouter(prefix="/agent", tags=["AI Agent"])
 
@@ -53,3 +61,26 @@ async def chat_endpoint(request: ChatRequest):
             f"Lỗi phản hồi trợ lý AI: {str(e)}",
             status_code=500,
         )
+
+
+@router.post("/weekly-financial-summary")
+async def weekly_financial_summary_endpoint(request: WeeklySummaryRequest):
+    """
+    Tóm tắt tình hình tài chính tuần (BR-AI-07) theo nguyên tắc Human-in-the-Loop.
+    AI Agent đóng vai trò Giám đốc tài chính (Virtual CFO) phân tích tổng quan
+    doanh thu, chi phí, dòng tiền, nợ quá hạn và nghĩa vụ thuế để đưa ra
+    nhận định điều hành và kiến nghị hành động cụ thể cho chủ doanh nghiệp.
+    """
+    try:
+        summary_data = generate_weekly_financial_summary(request)
+        return success_response(
+            data=summary_data.model_dump(),
+            message="Tổng hợp tóm tắt tài chính tuần thành công",
+        )
+    except Exception as e:
+        return error_response(
+            "ERR_FINANCIAL_SUMMARY_FAILED",
+            f"Lỗi phân tích tóm tắt tài chính: {str(e)}",
+            status_code=500,
+        )
+

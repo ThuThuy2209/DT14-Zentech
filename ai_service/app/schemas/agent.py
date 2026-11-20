@@ -73,3 +73,65 @@ class ChatResponseData(BaseModel):
         default="LEGAL_QA",
         description="Loại tương tác để lưu vào bảng ai_interactions của Database",
     )
+
+
+# ============================================================================
+# CÁC SCHEMA CHO TÍNH NĂNG TÓM TẮT TÌNH HÌNH TÀI CHÍNH TUẦN (BR-AI-07)
+# ============================================================================
+
+class OverdueReceivableItem(BaseModel):
+    customer_name: str = Field(description="Tên khách hàng nợ")
+    invoice_no: Optional[str] = Field(default="", description="Mã hóa đơn liên quan")
+    amount: float = Field(description="Số tiền nợ quá hạn (VNĐ)")
+    overdue_days: int = Field(description="Số ngày đã quá hạn thanh toán")
+
+
+class UpcomingObligationItem(BaseModel):
+    title: str = Field(description="Tên nghĩa vụ pháp lý/thuế (ví dụ: Thuế GTGT Quý 4, Đóng BHXH)")
+    deadline: str = Field(description="Hạn chót thực hiện (YYYY-MM-DD)")
+    estimated_amount: Optional[float] = Field(
+        default=0.0, description="Số tiền ước tính phải nộp (nếu có)"
+    )
+
+
+class WeeklySummaryRequest(BaseModel):
+    period: Optional[str] = Field(
+        default="Tuần này",
+        description="Kỳ tóm tắt, ví dụ: 'Tuần 47/2026 (17/11 - 23/11/2026)'",
+    )
+    total_revenue: float = Field(default=0.0, description="Tổng doanh thu phát sinh trong tuần (VNĐ)")
+    total_expense: float = Field(default=0.0, description="Tổng chi phí hóa đơn đầu vào phát sinh trong tuần (VNĐ)")
+    net_cashflow: Optional[float] = Field(
+        default=None, description="Dòng tiền ròng trong tuần (Doanh thu - Chi phí)"
+    )
+    overdue_receivables: Optional[List[OverdueReceivableItem]] = Field(
+        default=[], description="Danh sách các khoản công nợ khách hàng đang quá hạn"
+    )
+    upcoming_obligations: Optional[List[UpcomingObligationItem]] = Field(
+        default=[], description="Danh sách các nghĩa vụ thuế, bảo hiểm sắp đến hạn tuần tới"
+    )
+
+
+class WeeklySummaryResponseData(BaseModel):
+    period: str = Field(description="Kỳ báo cáo tóm tắt")
+    executive_summary: str = Field(
+        description="Tóm tắt nhận định điều hành tổng quan về sức khỏe tài chính trong tuần"
+    )
+    key_metrics: dict = Field(
+        description="Các chỉ số tài chính cơ bản trong tuần (doanh thu, chi phí, dòng tiền ròng, tỷ suất)"
+    )
+    risks_and_alerts: List[str] = Field(
+        default=[], description="Danh sách các rủi ro, cảnh báo cần chú ý (nợ xấu, hạn thuế cận kề...)"
+    )
+    action_recommendations: List[str] = Field(
+        default=[], description="Đề xuất hành động cụ thể cho chủ doanh nghiệp trong tuần tới"
+    )
+    disclaimer: str = Field(
+        default="Lưu ý (FR-107): Báo cáo tóm tắt được khởi tạo tự động bởi AI nhằm mục đích tham khảo hỗ trợ quản trị, không thay thế cho báo cáo tài chính chính thức.",
+        description="Cảnh báo pháp lý và miễn trừ trách nhiệm theo FR-107",
+    )
+    audit_explanation: str = Field(
+        default="AI Agent tự động tổng hợp tình hình tài chính tuần theo quy tắc nghiệp vụ BR-AI-07 và BR-AI-10.",
+        description="Giải trình nhật ký kiểm toán (Audit Trail)",
+    )
+
