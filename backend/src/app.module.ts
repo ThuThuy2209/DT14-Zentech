@@ -14,6 +14,7 @@ import { ExpensesModule } from './modules/expenses/expenses.module.js';
 import { BankAccountsModule } from './modules/bank-accounts/bank-accounts.module.js';
 import { BankStatementsModule } from './modules/bank-statements/bank-statements.module.js';
 import { BankTransactionsModule } from './modules/bank-transactions/bank-transactions.module.js';
+import { BankReconciliationsModule } from './modules/bank-reconciliations/bank-reconciliations.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { ConfigModule } from '@nestjs/config';
 
@@ -44,6 +45,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     BankAccountsModule,
     BankStatementsModule,
     BankTransactionsModule,
+    BankReconciliationsModule,
     PrismaModule,
   ],
   controllers: [AppController],
