@@ -10,6 +10,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
 import { CreateQuoteItemDto } from './create-quote-item.dto.js';
 
 export class CreateQuoteDto {
@@ -41,6 +42,7 @@ export class CreateQuoteDto {
   })
   status?: string = 'DRAFT';
 
+  @ApiProperty({ type: () => [CreateQuoteItemDto], description: 'Danh sách hạng mục báo giá' })
   @IsNotEmpty({ message: 'Danh sách hạng mục báo giá (items) không được để trống' })
   @IsArray({ message: 'items phải là một danh sách' })
   @ArrayMinSize(1, { message: 'Báo giá phải có ít nhất 1 hạng mục dịch vụ' })

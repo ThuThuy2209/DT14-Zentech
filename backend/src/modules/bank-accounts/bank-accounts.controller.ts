@@ -10,16 +10,15 @@
   Patch,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { BankAccountsService } from './bank-accounts.service.js';
 import { CreateBankAccountDto } from './dto/create-bank-account.dto.js';
 import { UpdateBankAccountDto } from './dto/update-bank-account.dto.js';
 import { FilterBankAccountDto } from './dto/filter-bank-account.dto.js';
 import { UpdateBankAccountStatusDto } from './dto/update-status.dto.js';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 
-@UseGuards(JwtAuthGuard)
+@ApiTags('Bank Accounts')
 @Controller('bank-accounts')
 export class BankAccountsController {
   constructor(private readonly bankAccountsService: BankAccountsService) {}

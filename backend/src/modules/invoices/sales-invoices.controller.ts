@@ -9,17 +9,16 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SalesInvoicesService } from './sales-invoices.service.js';
 import { CreateSalesInvoiceDto } from './dto/create-sales-invoice.dto.js';
 import { UpdateSalesInvoiceDto } from './dto/update-sales-invoice.dto.js';
 import { FilterSalesInvoiceDto } from './dto/filter-sales-invoice.dto.js';
 import { CreateFromAcceptanceDto } from './dto/create-from-acceptance.dto.js';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 
-@UseGuards(JwtAuthGuard)
+@ApiTags('Invoices')
 @Controller('sales-invoices')
 export class SalesInvoicesController {
   constructor(private readonly salesInvoicesService: SalesInvoicesService) {}
@@ -132,6 +131,20 @@ export class SalesInvoicesController {
   /**
    * HỦY HÓA ĐƠN BÁN RA (FR-69)
    */
+  @ApiOperation({ summary: 'Hủy hóa đơn bán ra' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        reason: {
+          type: 'string',
+          example: 'Khách hàng yêu cầu hủy xuất hóa đơn do sai thông tin',
+          description: 'Lý do hủy hóa đơn',
+        },
+      },
+      required: ['reason'],
+    },
+  })
   @Post(':id/cancel')
   async cancel(
     @Param('id', ParseIntPipe) id: number,

@@ -10,15 +10,14 @@
   Patch,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { ExpensesService } from './expenses.service.js';
 import { CreateExpenseDto } from './dto/create-expense.dto.js';
 import { UpdateExpenseDto } from './dto/update-expense.dto.js';
 import { FilterExpenseDto } from './dto/filter-expense.dto.js';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 
-@UseGuards(JwtAuthGuard)
+@ApiTags('Expenses')
 @Controller('expenses')
 export class ExpensesController {
   constructor(private readonly expensesService: ExpensesService) {}
