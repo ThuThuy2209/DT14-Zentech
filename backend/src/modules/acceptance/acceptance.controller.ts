@@ -9,17 +9,16 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AcceptanceService } from './acceptance.service.js';
 import { CreateAcceptanceDto } from './dto/create-acceptance.dto.js';
 import { UpdateAcceptanceDto } from './dto/update-acceptance.dto.js';
 import { FilterAcceptanceDto } from './dto/filter-acceptance.dto.js';
 import { AttachEvidenceDto } from './dto/attach-evidence.dto.js';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 
-@UseGuards(JwtAuthGuard)
+@ApiTags('Acceptance')
 @Controller('acceptances')
 export class AcceptanceController {
   constructor(private readonly acceptanceService: AcceptanceService) {}

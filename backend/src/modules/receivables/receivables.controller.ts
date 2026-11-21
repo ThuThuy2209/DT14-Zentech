@@ -8,17 +8,16 @@ import {
   ParseIntPipe,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { ReceivablesService } from './receivables.service.js';
 import { RecordPaymentDto } from './dto/record-payment.dto.js';
 import { FilterReceivableDto } from './dto/filter-receivable.dto.js';
 import { CreateReminderDraftDto } from './dto/create-reminder-draft.dto.js';
 import { ApproveReminderDto } from './dto/approve-reminder.dto.js';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 
-@UseGuards(JwtAuthGuard)
+@ApiTags('Receivables')
 @Controller('receivables')
 export class ReceivablesController {
   constructor(private readonly receivablesService: ReceivablesService) {}
