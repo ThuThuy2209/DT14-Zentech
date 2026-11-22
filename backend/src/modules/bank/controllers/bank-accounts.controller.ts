@@ -11,12 +11,12 @@
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
-import { BankAccountsService } from './bank-accounts.service.js';
-import { CreateBankAccountDto } from './dto/create-bank-account.dto.js';
-import { UpdateBankAccountDto } from './dto/update-bank-account.dto.js';
-import { FilterBankAccountDto } from './dto/filter-bank-account.dto.js';
-import { UpdateBankAccountStatusDto } from './dto/update-status.dto.js';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { BankAccountsService } from '../services/bank-accounts.service.js';
+import { CreateBankAccountDto } from '../dto/create-bank-account.dto.js';
+import { UpdateBankAccountDto } from '../dto/update-bank-account.dto.js';
+import { FilterBankAccountDto } from '../dto/filter-bank-account.dto.js';
+import { UpdateBankAccountStatusDto } from '../dto/update-status.dto.js';
 
 @ApiTags('Bank Accounts')
 @Controller('bank-accounts')
@@ -24,6 +24,7 @@ export class BankAccountsController {
   constructor(private readonly bankAccountsService: BankAccountsService) {}
 
   // 1. Thêm tài khoản ngân hàng mới
+  @ApiOperation({ summary: 'Thêm tài khoản ngân hàng mới' })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() createDto: CreateBankAccountDto) {
@@ -36,6 +37,7 @@ export class BankAccountsController {
   }
 
   // 2. Lấy danh sách tài khoản ngân hàng (hỗ trợ phân trang, tìm kiếm, lọc status)
+  @ApiOperation({ summary: 'Lấy danh sách tài khoản ngân hàng' })
   @Get()
   async findAll(@Query() query: FilterBankAccountDto) {
     const data = await this.bankAccountsService.findAll(query);
@@ -48,6 +50,7 @@ export class BankAccountsController {
 
   // 3. Lấy chi tiết tài khoản ngân hàng
   // ParseIntPipe chuyển đổi dữ liệu đầu vào từ chuỗi (string) sang số nguyên (integer)
+  @ApiOperation({ summary: 'Lấy chi tiết tài khoản ngân hàng' })
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const data = await this.bankAccountsService.findOne(id);
@@ -60,6 +63,7 @@ export class BankAccountsController {
 
   // 4. Cập nhật thông tin tài khoản ngân hàng
   // ParseIntPipe chuyển đổi dữ liệu đầu vào từ chuỗi (string) sang số nguyên (integer)
+  @ApiOperation({ summary: 'Cập nhật thông tin tài khoản ngân hàng' })
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -73,7 +77,8 @@ export class BankAccountsController {
     };
   }
 
-  //5. Ngừng sử dụng hoặc kích hoạt lại tài khoản ngân hàng (AC-47)
+  // 5. Ngừng sử dụng hoặc kích hoạt lại tài khoản ngân hàng (AC-47)
+  @ApiOperation({ summary: 'Cập nhật trạng thái tài khoản ngân hàng' })
   @Patch(':id/status')
   async updateStatus(
     @Param('id', ParseIntPipe) id: number,
@@ -88,6 +93,7 @@ export class BankAccountsController {
   }
 
   // 6. Xóa tài khoản ngân hàng (chỉ khi chưa có sao kê)
+  @ApiOperation({ summary: 'Xóa tài khoản ngân hàng' })
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number) {
     const data = await this.bankAccountsService.remove(id);

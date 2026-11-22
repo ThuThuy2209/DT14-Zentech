@@ -11,7 +11,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { QuotesService } from './quotes.service.js';
 import { CreateQuoteDto } from './dto/create-quote.dto.js';
 import { UpdateQuoteDto } from './dto/update-quote.dto.js';
@@ -27,6 +27,7 @@ export class QuotesController {
   /**
    * FR-29: Lấy danh mục dịch vụ mẫu để chọn nhanh khi tạo báo giá
    */
+  @ApiOperation({ summary: 'Lấy danh mục dịch vụ mẫu cho báo giá' })
   @Get('services')
   async getServices() {
     const data = await this.quotesService.getServices();
@@ -40,6 +41,7 @@ export class QuotesController {
   /**
    * FR-28, FR-30, FR-31: Tạo báo giá mới kèm các hạng mục dịch vụ
    */
+  @ApiOperation({ summary: 'Tạo báo giá mới kèm hạng mục dịch vụ' })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
@@ -57,6 +59,7 @@ export class QuotesController {
   /**
    * Lấy danh sách báo giá (tìm kiếm & phân trang)
    */
+  @ApiOperation({ summary: 'Lấy danh sách báo giá' })
   @Get()
   async findAll(@Query() query: FilterQuoteDto) {
     const data = await this.quotesService.findAll(query);
@@ -70,6 +73,7 @@ export class QuotesController {
   /**
    * FR-33: Xem chi tiết 1 báo giá theo ID
    */
+  @ApiOperation({ summary: 'Xem chi tiết 1 báo giá' })
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const data = await this.quotesService.findOne(id);
@@ -83,6 +87,7 @@ export class QuotesController {
   /**
    * FR-37: Xem lịch sử chỉnh sửa và gửi báo giá
    */
+  @ApiOperation({ summary: 'Xem lịch sử báo giá' })
   @Get(':id/history')
   async getHistory(@Param('id', ParseIntPipe) id: number) {
     const data = await this.quotesService.getHistory(id);
@@ -96,6 +101,7 @@ export class QuotesController {
   /**
    * FR-34: Gửi báo giá cho khách hàng qua email
    */
+  @ApiOperation({ summary: 'Gửi email báo giá cho khách hàng' })
   @Post(':id/send')
   @HttpCode(HttpStatus.OK)
   async sendQuote(
@@ -113,6 +119,7 @@ export class QuotesController {
   /**
    * FR-36 & BR-08, BR-09: Chuyển báo giá thành hợp đồng
    */
+  @ApiOperation({ summary: 'Chuyển báo giá thành hợp đồng' })
   @Post(':id/convert-to-contract')
   @HttpCode(HttpStatus.CREATED)
   async convertToContract(
@@ -130,6 +137,7 @@ export class QuotesController {
   /**
    * FR-32: Cập nhật thông tin báo giá
    */
+  @ApiOperation({ summary: 'Cập nhật thông tin báo giá' })
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -147,6 +155,7 @@ export class QuotesController {
   /**
    * FR-35: Cập nhật trạng thái báo giá (DRAFT -> SENT -> ACCEPTED / REJECTED)
    */
+  @ApiOperation({ summary: 'Cập nhật trạng thái báo giá' })
   @Patch(':id/status')
   async updateStatus(
     @Param('id', ParseIntPipe) id: number,
@@ -168,6 +177,7 @@ export class QuotesController {
   /**
    * Xóa báo giá (chỉ xóa được khi chưa lập Hợp đồng)
    */
+  @ApiOperation({ summary: 'Xóa báo giá' })
   @Delete(':id')
   async remove(
     @Param('id', ParseIntPipe) id: number,

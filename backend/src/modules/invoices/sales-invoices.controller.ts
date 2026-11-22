@@ -18,7 +18,7 @@ import { FilterSalesInvoiceDto } from './dto/filter-sales-invoice.dto.js';
 import { CreateFromAcceptanceDto } from './dto/create-from-acceptance.dto.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 
-@ApiTags('Invoices')
+@ApiTags('Sales Invoices')
 @Controller('sales-invoices')
 export class SalesInvoicesController {
   constructor(private readonly salesInvoicesService: SalesInvoicesService) {}
@@ -26,6 +26,7 @@ export class SalesInvoicesController {
   /**
    * LẬP HÓA ĐƠN BÁN RA MỚI (FR-65)
    */
+  @ApiOperation({ summary: 'Lập hóa đơn bán ra mới' })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
@@ -46,6 +47,7 @@ export class SalesInvoicesController {
   /**
    * XUẤT HÓA ĐƠN BÁN RA TỪ BIÊN BẢN NGHIỆM THU ĐẠT (FR-66, FR-67)
    */
+  @ApiOperation({ summary: 'Xuất hóa đơn bán ra từ biên bản nghiệm thu đạt' })
   @Post('from-acceptance/:acceptanceId')
   @HttpCode(HttpStatus.CREATED)
   async createFromAcceptance(
@@ -68,6 +70,7 @@ export class SalesInvoicesController {
   /**
    * TRA CỨU & DANH SÁCH HÓA ĐƠN BÁN RA (FR-70)
    */
+  @ApiOperation({ summary: 'Tra cứu & danh sách hóa đơn bán ra' })
   @Get()
   async findAll(@Query() query: FilterSalesInvoiceDto) {
     const data = await this.salesInvoicesService.findAll(query);
@@ -81,6 +84,7 @@ export class SalesInvoicesController {
   /**
    * XEM CHI TIẾT 1 HÓA ĐƠN BÁN RA (FR-70, FR-71)
    */
+  @ApiOperation({ summary: 'Xem chi tiết 1 hóa đơn bán ra' })
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const data = await this.salesInvoicesService.findOne(id);
@@ -94,6 +98,7 @@ export class SalesInvoicesController {
   /**
    * CẬP NHẬT HÓA ĐƠN BÁN RA (KHI CÒN LÀ DRAFT)
    */
+  @ApiOperation({ summary: 'Cập nhật hóa đơn bán ra (khi còn là DRAFT)' })
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -115,6 +120,7 @@ export class SalesInvoicesController {
   /**
    * PHÁT HÀNH CHÍNH THỨC HÓA ĐƠN BÁN RA (FR-69)
    */
+  @ApiOperation({ summary: 'Phát hành chính thức hóa đơn bán ra' })
   @Post(':id/issue')
   async issue(
     @Param('id', ParseIntPipe) id: number,

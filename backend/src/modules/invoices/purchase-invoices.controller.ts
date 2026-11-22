@@ -28,7 +28,7 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-@ApiTags('Invoices')
+@ApiTags('Purchase Invoices')
 @Controller('purchase-invoices')
 export class PurchaseInvoicesController {
   constructor(
@@ -38,6 +38,7 @@ export class PurchaseInvoicesController {
   /**
    * ĐỒNG BỘ 25 HÓA ĐƠN MẪU (NÚT [ĐỒNG BỘ TỪ EMAIL])
    */
+  @ApiOperation({ summary: 'Đồng bộ hóa đơn mẫu từ email' })
   @Post('sync-demo')
   @HttpCode(HttpStatus.OK)
   async syncDemoInvoices(@CurrentUser() user: { id: number }) {
@@ -106,6 +107,7 @@ export class PurchaseInvoicesController {
   /**
    * LẤY DANH SÁCH HÓA ĐƠN ĐẦU VÀO (THEO TAB GIAO DIỆN)
    */
+  @ApiOperation({ summary: 'Lấy danh sách hóa đơn đầu vào' })
   @Get()
   async findAll(@Query() query: FilterPurchaseInvoiceDto) {
     const data = await this.purchaseInvoicesService.findAll(query);
@@ -119,6 +121,7 @@ export class PurchaseInvoicesController {
   /**
    * XEM CHI TIẾT 1 HÓA ĐƠN ĐẦU VÀO (CHO MÀN HÌNH CHIA ĐÔI SPLIT-VIEW)
    */
+  @ApiOperation({ summary: 'Xem chi tiết 1 hóa đơn đầu vào' })
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const data = await this.purchaseInvoicesService.findOne(id);
@@ -132,6 +135,7 @@ export class PurchaseInvoicesController {
   /**
    * CHỈNH SỬA THÔNG TIN BÓC TÁCH CỦA HÓA ĐƠN
    */
+  @ApiOperation({ summary: 'Chỉnh sửa thông tin bóc tách của hóa đơn đầu vào' })
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -153,6 +157,7 @@ export class PurchaseInvoicesController {
   /**
    * PHÊ DUYỆT / XÁC NHẬN HÓA ĐƠN GHI SỔ
    */
+  @ApiOperation({ summary: 'Phê duyệt / xác nhận hóa đơn đầu vào' })
   @Post(':id/confirm')
   async confirm(
     @Param('id', ParseIntPipe) id: number,

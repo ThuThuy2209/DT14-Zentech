@@ -1,4 +1,5 @@
 import { IsIn, IsNumberString, IsOptional } from 'class-validator';
+import { MatchStatus } from '../constants/bank.constant.js';
 
 export class FilterReconciliationDto {
   @IsOptional()
@@ -6,7 +7,7 @@ export class FilterReconciliationDto {
   transactionId?: number;
 
   @IsOptional()
-  @IsIn(['CONFIRMED', 'REJECTED', 'PROPOSED'], {
+  @IsIn(Object.values(MatchStatus), {
     message: 'Trạng thái đối chiếu không hợp lệ',
   })
   matchStatus?: string;

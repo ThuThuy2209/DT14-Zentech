@@ -26,6 +26,7 @@ export class ServicesController {
   /**
    * 1. Thêm dịch vụ mới vào danh mục
    */
+  @ApiOperation({ summary: 'Thêm dịch vụ mới vào danh mục' })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() createServiceDto: CreateServiceDto) {
@@ -40,6 +41,7 @@ export class ServicesController {
   /**
    * 2. Xem danh sách & Tìm kiếm dịch vụ
    */
+  @ApiOperation({ summary: 'Xem danh sách & tìm kiếm dịch vụ' })
   @Get()
   async findAll(@Query() query: FilterServiceDto) {
     const data = await this.servicesService.findAll(query);
@@ -53,6 +55,7 @@ export class ServicesController {
   /**
    * 3. Xem chi tiết 1 dịch vụ
    */
+  @ApiOperation({ summary: 'Xem chi tiết 1 dịch vụ' })
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const data = await this.servicesService.findOne(id);
@@ -66,6 +69,7 @@ export class ServicesController {
   /**
    * 4. Cập nhật thông tin dịch vụ
    */
+  @ApiOperation({ summary: 'Cập nhật thông tin dịch vụ' })
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -82,6 +86,7 @@ export class ServicesController {
   /**
    * 5. Cập nhật đơn giá dịch vụ
    */
+  @ApiOperation({ summary: 'Cập nhật đơn giá dịch vụ' })
   @Patch(':id/price')
   async updatePrice(
     @Param('id', ParseIntPipe) id: number,
@@ -131,6 +136,7 @@ export class ServicesController {
   /**
    * 7. Xóa dịch vụ (tự động xóa mềm nếu đã từng dùng trong báo giá)
    */
+  @ApiOperation({ summary: 'Xóa dịch vụ (xóa mềm nếu đã dùng)' })
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number) {
     const result = await this.servicesService.remove(id);

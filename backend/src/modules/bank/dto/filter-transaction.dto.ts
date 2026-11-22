@@ -5,6 +5,10 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
+import {
+  ReconciliationStatus,
+  TransactionType,
+} from '../constants/bank.constant.js';
 
 export class FilterTransactionDto {
   @IsOptional()
@@ -16,13 +20,13 @@ export class FilterTransactionDto {
   accountId?: number;
 
   @IsOptional()
-  @IsIn(['UNRECONCILED', 'RECONCILED', 'PARTIALLY_RECONCILED'], {
+  @IsIn(Object.values(ReconciliationStatus), {
     message: 'Trạng thái đối chiếu không hợp lệ',
   })
   reconciliationStatus?: string;
 
   @IsOptional()
-  @IsIn(['IN', 'OUT', 'ALL'], {
+  @IsIn(Object.values(TransactionType), {
     message: 'Loại giao dịch phải là IN (tiền vào), OUT (tiền ra) hoặc ALL',
   })
   type?: string;

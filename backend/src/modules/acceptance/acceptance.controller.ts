@@ -10,7 +10,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AcceptanceService } from './acceptance.service.js';
 import { CreateAcceptanceDto } from './dto/create-acceptance.dto.js';
 import { UpdateAcceptanceDto } from './dto/update-acceptance.dto.js';
@@ -26,6 +26,7 @@ export class AcceptanceController {
   /**
    * Xem danh sách tất cả hồ sơ nghiệm thu (Phân trang, tìm kiếm, lọc)
    */
+  @ApiOperation({ summary: 'Xem danh sách hồ sơ nghiệm thu' })
   @Get()
   async findAll(@Query() query: FilterAcceptanceDto) {
     const data = await this.acceptanceService.findAll(query);
@@ -39,6 +40,7 @@ export class AcceptanceController {
   /**
    * Xem chi tiết 1 hồ sơ nghiệm thu
    */
+  @ApiOperation({ summary: 'Xem chi tiết 1 hồ sơ nghiệm thu' })
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const data = await this.acceptanceService.findOne(id);
@@ -52,6 +54,7 @@ export class AcceptanceController {
   /**
    * Tạo mới hồ sơ nghiệm thu
    */
+  @ApiOperation({ summary: 'Tạo mới hồ sơ nghiệm thu' })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
@@ -69,6 +72,7 @@ export class AcceptanceController {
   /**
    * Cập nhật hồ sơ nghiệm thu (nội dung, kết quả, vấn đề cần khắc phục...)
    */
+  @ApiOperation({ summary: 'Cập nhật hồ sơ nghiệm thu' })
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -90,6 +94,7 @@ export class AcceptanceController {
   /**
    * Đính kèm tài liệu minh chứng vào hồ sơ nghiệm thu
    */
+  @ApiOperation({ summary: 'Đính kèm tài liệu minh chứng vào hồ sơ nghiệm thu' })
   @Post(':id/evidence')
   async attachEvidence(
     @Param('id', ParseIntPipe) id: number,

@@ -14,10 +14,10 @@
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { BankStatementsService } from './bank-statements.service.js';
-import { UploadStatementDto } from './dto/upload-statement.dto.js';
-import { FilterStatementDto } from './dto/filter-statement.dto.js';
-import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { BankStatementsService } from '../services/bank-statements.service.js';
+import { UploadStatementDto } from '../dto/upload-statement.dto.js';
+import { FilterStatementDto } from '../dto/filter-statement.dto.js';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator.js';
 
 @ApiTags('Bank Statements')
 @Controller('bank-statements')
