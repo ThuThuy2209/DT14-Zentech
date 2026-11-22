@@ -4,13 +4,12 @@ import {
   Param,
   ParseIntPipe,
   Query,
-  UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { BankTransactionsService } from './bank-transactions.service.js';
 import { FilterTransactionDto } from './dto/filter-transaction.dto.js';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 
-@UseGuards(JwtAuthGuard)
+@ApiTags('Bank Transactions')
 @Controller('bank-transactions')
 export class BankTransactionsController {
   constructor(private readonly service: BankTransactionsService) {}

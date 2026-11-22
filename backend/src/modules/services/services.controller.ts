@@ -10,16 +10,15 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ServicesService } from './services.service.js';
 import { CreateServiceDto } from './dto/create-service.dto.js';
 import { UpdateServiceDto } from './dto/update-service.dto.js';
 import { UpdateServicePriceDto } from './dto/update-service-price.dto.js';
 import { FilterServiceDto } from './dto/filter-service.dto.js';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 
-@UseGuards(JwtAuthGuard)
+@ApiTags('Services')
 @Controller('services')
 export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
@@ -99,6 +98,20 @@ export class ServicesController {
   /**
    * 6. Ngừng kinh doanh hoặc kích hoạt lại dịch vụ
    */
+  @ApiOperation({ summary: 'Ngừng kinh doanh hoặc kích hoạt lại dịch vụ' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          enum: ['ACTIVE', 'INACTIVE'],
+          example: 'INACTIVE',
+          description: 'Trạng thái hoạt động (ACTIVE hoặc INACTIVE)',
+        },
+      },
+    },
+  })
   @Patch(':id/status')
   async toggleStatus(
     @Param('id', ParseIntPipe) id: number,

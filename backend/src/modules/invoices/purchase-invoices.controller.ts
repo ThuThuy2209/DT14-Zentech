@@ -10,9 +10,9 @@ import {
   Post,
   Query,
   UploadedFile,
-  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as path from 'path';
@@ -20,7 +20,6 @@ import * as fs from 'fs';
 import { PurchaseInvoicesService } from './purchase-invoices.service.js';
 import { UpdatePurchaseInvoiceDto } from './dto/update-purchase-invoice.dto.js';
 import { FilterPurchaseInvoiceDto } from './dto/filter-purchase-invoice.dto.js';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 
 // Đảm bảo thư mục lưu trữ file upload luôn tồn tại
@@ -29,7 +28,7 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-@UseGuards(JwtAuthGuard)
+@ApiTags('Invoices')
 @Controller('purchase-invoices')
 export class PurchaseInvoicesController {
   constructor(
@@ -53,6 +52,21 @@ export class PurchaseInvoicesController {
   /**
    * TẢI LÊN FILE HÓA ĐƠN (PDF / ẢNH) VÀ AI TỰ ĐỘNG BÓC TÁCH (OCR)
    */
+  @ApiOperation({ summary: 'Tải lên file hóa đơn (PDF/Ảnh) để AI bóc tách OCR' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Tệp hóa đơn PDF, JPG, PNG (tối đa 15MB)',
+        },
+      },
+      required: ['file'],
+    },
+  })
   @Post('upload')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -155,6 +169,20 @@ export class PurchaseInvoicesController {
   /**
    * TỪ CHỐI HÓA ĐƠN TRÙNG LẶP HOẶC KHÔNG HỢP LỆ
    */
+  @ApiOperation({ summary: 'Từ chối hóa đơn đầu vào' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        reason: {
+          type: 'string',
+          example: 'Hóa đơn trùng lặp hoặc sai thông tin thuế',
+          description: 'Lý do từ chối',
+        },
+      },
+      required: ['reason'],
+    },
+  })
   @Post(':id/reject')
   async reject(
     @Param('id', ParseIntPipe) id: number,

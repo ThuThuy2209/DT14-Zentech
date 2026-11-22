@@ -10,19 +10,19 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CustomersService } from './customers.service.js';
 import { CreateCustomerDto } from './dto/create-customer.dto.js';
 import { UpdateCustomerDto } from './dto/update-customer.dto.js';
 import { FilterCustomerDto } from './dto/filter-customer.dto.js';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 
-@UseGuards(JwtAuthGuard)
+@ApiTags('Customers')
 @Controller('customers')
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
+  @ApiOperation({ summary: 'Tạo khách hàng mới' })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() createCustomerDto: CreateCustomerDto) {
@@ -34,6 +34,7 @@ export class CustomersController {
     };
   }
 
+  @ApiOperation({ summary: 'Lấy danh sách khách hàng (có lọc & phân trang)' })
   @Get()
   async findAll(@Query() query: FilterCustomerDto) {
     const data = await this.customersService.findAll(query);
@@ -44,6 +45,7 @@ export class CustomersController {
     };
   }
 
+  @ApiOperation({ summary: 'Chi tiết khách hàng theo ID' })
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const data = await this.customersService.findOne(id);
@@ -54,6 +56,7 @@ export class CustomersController {
     };
   }
 
+  @ApiOperation({ summary: 'Cập nhật thông tin khách hàng' })
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -67,6 +70,7 @@ export class CustomersController {
     };
   }
 
+  @ApiOperation({ summary: 'Xóa hoặc ngừng hoạt động khách hàng' })
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number) {
     const result = await this.customersService.remove(id);

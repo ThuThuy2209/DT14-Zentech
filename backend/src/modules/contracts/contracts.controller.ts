@@ -10,18 +10,17 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { ContractsService } from './contracts.service.js';
 import { CreateContractDto } from './dto/create-contract.dto.js';
 import { UpdateContractDto } from './dto/update-contract.dto.js';
 import { FilterContractDto } from './dto/filter-contract.dto.js';
 import { CreateTemplateDto } from './dto/create-template.dto.js';
 import { AddSignerDto } from './dto/add-signer.dto.js';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 
-@UseGuards(JwtAuthGuard)
+@ApiTags('Contracts')
 @Controller('contracts')
 export class ContractsController {
   constructor(private readonly contractsService: ContractsService) {}

@@ -6,16 +6,16 @@ import {
   HttpStatus,
   Patch,
   Post,
-  UseGuards,
 } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { UpdateCompanyDto } from './dto/update-company.dto.js';
 import { Public } from '../../common/decorators/public.decorator.js';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -23,6 +23,7 @@ export class AuthController {
   /**
    * 1. Đăng nhập (Chủ doanh nghiệp)
    */
+  @ApiOperation({ summary: 'Đăng nhập' })
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -38,7 +39,7 @@ export class AuthController {
   /**
    * 2. Đăng xuất
    */
-  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Đăng xuất' })
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   logout() {
@@ -52,7 +53,7 @@ export class AuthController {
   /**
    * 3. Lấy thông tin tài khoản hiện tại
    */
-  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Lấy thông tin tài khoản hiện tại' })
   @Get('me')
   async getProfile(@CurrentUser() user: { id: number }) {
     const data = await this.authService.getProfile(user.id);
@@ -66,7 +67,7 @@ export class AuthController {
   /**
    * 4. Đổi mật khẩu
    */
-  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Đổi mật khẩu' })
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
   async changePassword(
@@ -84,7 +85,7 @@ export class AuthController {
   /**
    * 5. Xem thông tin doanh nghiệp
    */
-  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Xem thông tin doanh nghiệp' })
   @Get('company')
   async getCompany() {
     const data = await this.authService.getCompany();
@@ -98,7 +99,7 @@ export class AuthController {
   /**
    * 6. Cập nhật thông tin doanh nghiệp
    */
-  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Cập nhật thông tin doanh nghiệp' })
   @Patch('company')
   async updateCompany(@Body() updateCompanyDto: UpdateCompanyDto) {
     const data = await this.authService.updateCompany(updateCompanyDto);
@@ -112,7 +113,7 @@ export class AuthController {
   /**
    * 7. Cấu hình hệ thống
    */
-  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Xem cấu hình hệ thống' })
   @Get('system-config')
   async getSystemConfig() {
     const data = await this.authService.getSystemConfig();

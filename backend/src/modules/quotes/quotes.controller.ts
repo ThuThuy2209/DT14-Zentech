@@ -10,17 +10,16 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { QuotesService } from './quotes.service.js';
 import { CreateQuoteDto } from './dto/create-quote.dto.js';
 import { UpdateQuoteDto } from './dto/update-quote.dto.js';
 import { FilterQuoteDto } from './dto/filter-quote.dto.js';
 import { UpdateQuoteStatusDto } from './dto/update-quote-status.dto.js';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 
-@UseGuards(JwtAuthGuard)
+@ApiTags('Quotes')
 @Controller('quotes')
 export class QuotesController {
   constructor(private readonly quotesService: QuotesService) {}
