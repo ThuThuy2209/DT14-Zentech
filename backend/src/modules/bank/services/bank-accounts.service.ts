@@ -4,11 +4,12 @@
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service.js';
-import { CreateBankAccountDto } from './dto/create-bank-account.dto.js';
-import { UpdateBankAccountDto } from './dto/update-bank-account.dto.js';
-import { FilterBankAccountDto } from './dto/filter-bank-account.dto.js';
-import { UpdateBankAccountStatusDto } from './dto/update-status.dto.js';
+import { PrismaService } from '../../../prisma/prisma.service.js';
+import { CreateBankAccountDto } from '../dto/create-bank-account.dto.js';
+import { UpdateBankAccountDto } from '../dto/update-bank-account.dto.js';
+import { FilterBankAccountDto } from '../dto/filter-bank-account.dto.js';
+import { UpdateBankAccountStatusDto } from '../dto/update-status.dto.js';
+import { BankAccountStatus } from '../constants/bank.constant.js';
 
 @Injectable()
 export class BankAccountsService {
@@ -35,7 +36,7 @@ export class BankAccountsService {
           accountNumber: createDto.accountNumber.trim(),
           accountHolder: createDto.accountHolder.trim(),
           currency: createDto.currency?.trim() || 'VND',
-          status: createDto.status ?? 'ACTIVE',
+          status: createDto.status ?? BankAccountStatus.ACTIVE,
         },
       });
     });

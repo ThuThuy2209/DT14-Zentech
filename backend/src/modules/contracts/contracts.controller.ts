@@ -11,7 +11,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ContractsService } from './contracts.service.js';
 import { CreateContractDto } from './dto/create-contract.dto.js';
 import { UpdateContractDto } from './dto/update-contract.dto.js';
@@ -30,6 +30,7 @@ export class ContractsController {
   /**
    * Lấy danh sách mẫu hợp đồng & phiên bản mẫu
    */
+  @ApiOperation({ summary: 'Lấy danh sách mẫu hợp đồng' })
   @Get('templates')
   async getTemplates() {
     const data = await this.contractsService.getTemplates();
@@ -43,6 +44,7 @@ export class ContractsController {
   /**
    * Tạo mới mẫu hợp đồng kèm phiên bản 1
    */
+  @ApiOperation({ summary: 'Tạo mới mẫu hợp đồng' })
   @Post('templates')
   @HttpCode(HttpStatus.CREATED)
   async createTemplate(@Body() createTemplateDto: CreateTemplateDto) {
@@ -59,6 +61,7 @@ export class ContractsController {
   /**
    * Tạo hợp đồng mới (từ mẫu hoặc nhập trực tiếp)
    */
+  @ApiOperation({ summary: 'Tạo hợp đồng mới' })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(
@@ -76,6 +79,7 @@ export class ContractsController {
   /**
    * Xem danh sách hợp đồng (tìm kiếm & phân trang)
    */
+  @ApiOperation({ summary: 'Xem danh sách hợp đồng' })
   @Get()
   async findAll(@Query() query: FilterContractDto) {
     const data = await this.contractsService.findAll(query);
@@ -89,6 +93,7 @@ export class ContractsController {
   /**
    * Xem chi tiết 1 hợp đồng
    */
+  @ApiOperation({ summary: 'Xem chi tiết 1 hợp đồng' })
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const data = await this.contractsService.findOne(id);
@@ -102,6 +107,7 @@ export class ContractsController {
   /**
    * Cập nhật thông tin hợp đồng (khi chưa ký)
    */
+  @ApiOperation({ summary: 'Cập nhật thông tin hợp đồng' })
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -123,6 +129,7 @@ export class ContractsController {
   /**
    * Xóa hợp đồng
    */
+  @ApiOperation({ summary: 'Xóa hợp đồng' })
   @Delete(':id')
   async remove(
     @Param('id', ParseIntPipe) id: number,
@@ -141,6 +148,7 @@ export class ContractsController {
   /**
    * Thêm người ký vào hợp đồng
    */
+  @ApiOperation({ summary: 'Thêm người ký vào hợp đồng' })
   @Post(':id/signers')
   @HttpCode(HttpStatus.CREATED)
   async addSigner(
@@ -158,6 +166,7 @@ export class ContractsController {
   /**
    * Lấy danh sách người ký của hợp đồng
    */
+  @ApiOperation({ summary: 'Lấy danh sách người ký của hợp đồng' })
   @Get(':id/signers')
   async getSigners(@Param('id', ParseIntPipe) id: number) {
     const data = await this.contractsService.getSigners(id);
@@ -172,6 +181,7 @@ export class ContractsController {
   /**
    * Gửi hợp đồng đến cổng ký số Sandbox & mô phỏng ký số hoàn tất
    */
+  @ApiOperation({ summary: 'Gửi hợp đồng ký số Sandbox' })
   @Post(':id/sign-sandbox')
   @HttpCode(HttpStatus.OK)
   async sendToSandboxSign(
@@ -189,6 +199,7 @@ export class ContractsController {
   /**
    * Xem tiến trình & lịch sử sự kiện ký số Sandbox
    */
+  @ApiOperation({ summary: 'Xem tiến trình ký số Sandbox' })
   @Get(':id/signing-status')
   async getSigningStatus(@Param('id', ParseIntPipe) id: number) {
     const data = await this.contractsService.getSigningStatus(id);

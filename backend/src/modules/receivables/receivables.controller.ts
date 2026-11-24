@@ -9,7 +9,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ReceivablesService } from './receivables.service.js';
 import { RecordPaymentDto } from './dto/record-payment.dto.js';
 import { FilterReceivableDto } from './dto/filter-receivable.dto.js';
@@ -25,6 +25,7 @@ export class ReceivablesController {
   /**
    * TỔNG HỢP CÔNG NỢ TOÀN DOANH NGHIỆP (FR-73, FR-76)
    */
+  @ApiOperation({ summary: 'Tổng hợp công nợ toàn doanh nghiệp' })
   @Get('summary')
   async getSummary() {
     const data = await this.receivablesService.getSummary();
@@ -38,6 +39,7 @@ export class ReceivablesController {
   /**
    * GHI NHẬN THANH TOÁN CHO HÓA ĐƠN BÁN RA (FR-72)
    */
+  @ApiOperation({ summary: 'Ghi nhận thanh toán cho hóa đơn bán ra' })
   @Post('payments')
   @HttpCode(HttpStatus.CREATED)
   async recordPayment(
@@ -58,6 +60,7 @@ export class ReceivablesController {
   /**
    * DANH SÁCH & THEO DÕI CÔNG NỢ CHI TIẾT (FR-73, FR-74, FR-75)
    */
+  @ApiOperation({ summary: 'Danh sách & theo dõi công nợ chi tiết' })
   @Get()
   async findAll(@Query() query: FilterReceivableDto) {
     const data = await this.receivablesService.findAll(query);
@@ -71,6 +74,7 @@ export class ReceivablesController {
   /**
    * AI SOẠN EMAIL NHẮC NỢ (BẢN NHÁP CHO CHỦ DOANH NGHIỆP) (FR-77)
    */
+  @ApiOperation({ summary: 'AI soạn nháp email nhắc nợ' })
   @Post(':invoiceId/remind-draft')
   @HttpCode(HttpStatus.CREATED)
   async createReminderDraft(
@@ -93,6 +97,7 @@ export class ReceivablesController {
   /**
    * CHỦ DOANH NGHIỆP DUYỆT & GỬI EMAIL NHẮC NỢ (FR-78, FR-79, FR-80)
    */
+  @ApiOperation({ summary: 'Chủ doanh nghiệp duyệt & gửi email nhắc nợ' })
   @Post('remind-approve/:approvalId')
   async approveReminder(
     @Param('approvalId', ParseIntPipe) approvalId: number,
@@ -114,6 +119,7 @@ export class ReceivablesController {
   /**
    * LỊCH SỬ NHẮC NỢ CỦA HÓA ĐƠN (FR-80)
    */
+  @ApiOperation({ summary: 'Xem lịch sử nhắc nợ của hóa đơn' })
   @Get(':invoiceId/reminder-history')
   async getReminderHistory(@Param('invoiceId', ParseIntPipe) invoiceId: number) {
     const data = await this.receivablesService.getReminderHistory(invoiceId);
@@ -127,6 +133,7 @@ export class ReceivablesController {
   /**
    * XEM CHI TIẾT CÔNG NỢ 1 HÓA ĐƠN
    */
+  @ApiOperation({ summary: 'Xem chi tiết công nợ 1 hóa đơn' })
   @Get(':invoiceId')
   async findOne(@Param('invoiceId', ParseIntPipe) invoiceId: number) {
     const data = await this.receivablesService.findOne(invoiceId);

@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import dayjs from 'dayjs';
-import { PrismaService } from '../../prisma/prisma.service.js';
-import { FilterTransactionDto } from './dto/filter-transaction.dto.js';
+import { PrismaService } from '../../../prisma/prisma.service.js';
+import { FilterTransactionDto } from '../dto/filter-transaction.dto.js';
+import { TransactionType } from '../constants/bank.constant.js';
 
 @Injectable()
 export class BankTransactionsService {
@@ -20,8 +21,8 @@ export class BankTransactionsService {
     if (query.reconciliationStatus) {
       where.reconciliationStatus = query.reconciliationStatus;
     }
-    if (query.type === 'IN') where.creditAmount = { gt: 0 };
-    else if (query.type === 'OUT') where.debitAmount = { gt: 0 };
+    if (query.type === TransactionType.IN) where.creditAmount = { gt: 0 };
+    else if (query.type === TransactionType.OUT) where.debitAmount = { gt: 0 };
 
     if (query.search) {
       const kw = query.search.trim();

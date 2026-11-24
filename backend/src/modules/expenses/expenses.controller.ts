@@ -11,7 +11,7 @@
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ExpensesService } from './expenses.service.js';
 import { CreateExpenseDto } from './dto/create-expense.dto.js';
 import { UpdateExpenseDto } from './dto/update-expense.dto.js';
@@ -22,6 +22,7 @@ import { FilterExpenseDto } from './dto/filter-expense.dto.js';
 export class ExpensesController {
   constructor(private readonly expensesService: ExpensesService) {}
 
+  @ApiOperation({ summary: 'Ghi nhận khoản chi phí mới' })
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() createExpenseDto: CreateExpenseDto) {
@@ -33,6 +34,7 @@ export class ExpensesController {
     };
   }
 
+  @ApiOperation({ summary: 'Lấy thống kê chi phí' })
   @Get('statistics')
   async getStatistics(@Query('year') year?: string) {
     const parsedYear = year ? parseInt(year, 10) : undefined;
@@ -44,6 +46,7 @@ export class ExpensesController {
     };
   }
 
+  @ApiOperation({ summary: 'Lấy danh sách chi phí (có lọc & phân trang)' })
   @Get()
   async findAll(@Query() query: FilterExpenseDto) {
     const data = await this.expensesService.findAll(query);
@@ -54,6 +57,7 @@ export class ExpensesController {
     };
   }
 
+  @ApiOperation({ summary: 'Lấy chi tiết khoản chi phí' })
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number) {
     const data = await this.expensesService.findOne(id);
@@ -64,6 +68,7 @@ export class ExpensesController {
     };
   }
 
+  @ApiOperation({ summary: 'Cập nhật khoản chi phí' })
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -77,6 +82,7 @@ export class ExpensesController {
     };
   }
 
+  @ApiOperation({ summary: 'Xóa khoản chi phí' })
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number) {
     const data = await this.expensesService.remove(id);

@@ -6,12 +6,16 @@
 } from '@nestjs/common';
 import { createHash } from 'crypto'; // Node.js built-in
 import dayjs from 'dayjs';
-import { PrismaService } from '../../prisma/prisma.service.js';
-import { FilterStatementDto } from './dto/filter-statement.dto.js';
+import { PrismaService } from '../../../prisma/prisma.service.js';
+import { FilterStatementDto } from '../dto/filter-statement.dto.js';
 import {
   ExpressMulterFile,
   StatementParserUtil,
-} from './utils/statement-parser.util.js';
+} from '../utils/statement-parser.util.js';
+import {
+  ReconciliationStatus,
+  MatchStatus,
+} from '../constants/bank.constant.js';
 
 @Injectable()
 export class BankStatementsService {
@@ -129,7 +133,7 @@ export class BankStatementsService {
           balanceAfter: row.balanceAfter,
           referenceCode: row.referenceCode,
           duplicateStatus: isDup ? 'DUPLICATE' : 'UNIQUE',
-          reconciliationStatus: 'UNRECONCILED',
+          reconciliationStatus: ReconciliationStatus.UNRECONCILED,
         };
       });
 
@@ -220,8 +224,8 @@ export class BankStatementsService {
 
       const hasReconciled = item.transactions.some(
         (t) =>
-          t.reconciliationStatus === 'RECONCILED' ||
-          t.reconciliations.some((r) => r.matchStatus === 'CONFIRMED'),
+          t.reconciliationStatus === ReconciliationStatus.RECONCILED ||
+          t.reconciliations.some((r) => r.matchStatus === MatchStatus.CONFIRMED),
       );
       if (hasReconciled) {
         throw new BadRequestException(
