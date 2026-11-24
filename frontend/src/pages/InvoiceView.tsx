@@ -383,7 +383,7 @@ export const InvoiceView: React.FC = () => {
 
   interface ITab {
   key: 'tat_ca' | 'can_duyet' | 'hop_le' | 'tu_choi';
-  label: string;
+  label: string; 
   count: number;
   urgent?: boolean;
 }

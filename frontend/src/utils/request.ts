@@ -1,6 +1,5 @@
 import { API_BASE_URL } from '../constants/api';
 
-// Định dạng dữ liệu phản hồi chuẩn theo CONTRIBUTING.md của nhóm
 export interface ApiResponse<T = any> {
   success: boolean;
   message?: string;
@@ -9,31 +8,29 @@ export interface ApiResponse<T = any> {
 }
 
 /**
- * Hàm tiện ích gọi POST API dùng chung cho toàn bộ dự án
- * @param endpoint Đường dẫn API (ví dụ: '/auth/login')
- * @param body Dữ liệu gửi lên server (object)
+ * Hàm gọi API tổng quát tự động đính kèm Token đăng nhập
  */
-export async function post<T = any>(endpoint: string, body: any): Promise<ApiResponse<T>> {
-  // Tự động lấy token nếu người dùng đã đăng nhập
+export async function request<T = any>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<ApiResponse<T>> {
   const token = localStorage.getItem('accessToken');
-
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
+    ...(options.headers || {}),
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    (headers as any)['Authorization'] = `Bearer ${token}`;
   }
 
-  // Ghép URL: bỏ dấu / thừa nếu có
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const url = `${API_BASE_URL}${cleanEndpoint}`;
 
   try {
     const response = await fetch(url, {
-      method: 'POST',
+      ...options,
       headers,
-      body: JSON.stringify(body),
     });
 
     const resData = await response.json();
@@ -49,12 +46,19 @@ export async function post<T = any>(endpoint: string, body: any): Promise<ApiRes
 
     return resData;
   } catch (error: any) {
-    console.error(`[POST Error] ${url}:`, error);
+    console.error(`[API Error] ${url}:`, error);
     return {
       success: false,
-      message: 'Không thể kết nối đến máy chủ Backend (Port 8080). Vui lòng thử lại!',
+      message: 'Không thể kết nối đến máy chủ Backend (Port 8080). Vui lòng đảm bảo backend đang chạy!',
       errorCode: 'NETWORK_ERROR',
       data: null as any,
     };
   }
 }
+
+// Các hàm tiện ích dùng cho toàn bộ dự án
+export const get = <T = any>(endpoint: string) => request<T>(endpoint, { method: 'GET' });
+export const post = <T = any>(endpoint: string, body?: any) => request<T>(endpoint, { method: 'POST', body: body ? JSON.stringify(body) : undefined });
+export const patch = <T = any>(endpoint: string, body?: any) => request<T>(endpoint, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined });
+export const put = <T = any>(endpoint: string, body?: any) => request<T>(endpoint, { method: 'PUT', body: body ? JSON.stringify(body) : undefined });
+export const del = <T = any>(endpoint: string) => request<T>(endpoint, { method: 'DELETE' });
