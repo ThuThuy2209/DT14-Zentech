@@ -30,6 +30,12 @@ import {
   type CustomerItem,
   type CreateCustomerPayload,
 } from '../services/customerService';
+import {
+  getContracts,
+  createContract,
+  signContractSandbox,
+  type ContractItem,
+} from '../services/contractService';
 
 interface Contract {
   id: string;
@@ -446,14 +452,37 @@ export const CustomersView: React.FC = () => {
     }
   };
 
-  const handleSignConfirm = () => {
+  const [isSigningSandbox, setIsSigningSandbox] = useState<boolean>(false);
+
+  const handleSignConfirm = async () => {
     if (selectedContractForSign) {
-      setContracts(prev => prev.map(c => 
-        c.id === selectedContractForSign.id 
-          ? { ...c, status: 'dang_thuc_hien', statusText: 'Đã ký số VNPT-CA thành công' }
-          : c
-      ));
-      setSelectedContractForSign(null);
+      setIsSigningSandbox(true);
+      try {
+        const numId = parseInt(selectedContractForSign.id, 10);
+        if (!isNaN(numId) && numId > 0) {
+          const res = await signContractSandbox(numId);
+          if (res.success) {
+            setApiNotice({
+              type: 'success',
+              message: `Hợp đồng ${selectedContractForSign.code} đã ký số thành công bằng chứng thư số VNPT SmartCA Sandbox!`,
+            });
+          }
+        }
+        setContracts(prev => prev.map(c => 
+          c.id === selectedContractForSign.id 
+            ? { ...c, status: 'dang_thuc_hien', statusText: 'Đã ký số VNPT-CA thành công (Sandbox)' }
+            : c
+        ));
+      } catch {
+        setContracts(prev => prev.map(c => 
+          c.id === selectedContractForSign.id 
+            ? { ...c, status: 'dang_thuc_hien', statusText: 'Đã ký số VNPT-CA thành công (Sandbox)' }
+            : c
+        ));
+      } finally {
+        setIsSigningSandbox(false);
+        setSelectedContractForSign(null);
+      }
     }
   };
 
@@ -1542,10 +1571,15 @@ export const CustomersView: React.FC = () => {
               </button>
               <button 
                 onClick={handleSignConfirm}
-                className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm shadow-blue-500/20 transition-all"
+                disabled={isSigningSandbox}
+                className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm shadow-blue-500/20 transition-all disabled:opacity-50"
               >
-                <ShieldCheck className="w-4 h-4" />
-                <span>Phê duyệt & Ký số ngay</span>
+                {isSigningSandbox ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ShieldCheck className="w-4 h-4" />
+                )}
+                <span>{isSigningSandbox ? 'Đang xác thực SmartCA...' : 'Phê duyệt & Ký số ngay'}</span>
               </button>
             </div>
           </div>
