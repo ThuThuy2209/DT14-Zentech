@@ -15,13 +15,15 @@ export async function request<T = any>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   const token = localStorage.getItem('accessToken');
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...(options.headers || {}),
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+
+  const headers: Record<string, string> = {
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+    ...((options.headers as Record<string, string>) || {}),
   };
 
   if (token) {
-    (headers as any)['Authorization'] = `Bearer ${token}`;
+    headers['Authorization'] = `Bearer ${token}`;
   }
 
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
@@ -62,3 +64,4 @@ export const post = <T = any>(endpoint: string, body?: any) => request<T>(endpoi
 export const patch = <T = any>(endpoint: string, body?: any) => request<T>(endpoint, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined });
 export const put = <T = any>(endpoint: string, body?: any) => request<T>(endpoint, { method: 'PUT', body: body ? JSON.stringify(body) : undefined });
 export const del = <T = any>(endpoint: string) => request<T>(endpoint, { method: 'DELETE' });
+export const upload = <T = any>(endpoint: string, formData: FormData) => request<T>(endpoint, { method: 'POST', body: formData });
