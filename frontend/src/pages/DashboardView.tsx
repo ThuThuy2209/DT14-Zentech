@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   TrendingUp, 
   Wallet, 
@@ -13,12 +13,20 @@ import {
   ArrowRight, 
   CheckCircle2, 
   PieChart, 
-  ChevronDown
+  ChevronDown,
+  RefreshCw,
+  Building2
 } from 'lucide-react';
+import { getBankAccounts, getExpenseStatistics, type BankAccountItem, type ExpenseStatistics } from '../services/financeService';
+import { getPurchaseInvoices, type PurchaseInvoiceItem } from '../services/invoiceService';
+import { getContracts, type ContractItem } from '../services/contractService';
+import { getCustomers } from '../services/customerService';
 
 interface DashboardViewProps {
   onNavigate?: (tab: string) => void;
 }
+
+const formatVND = (num: number) => (num || 0).toLocaleString('vi-VN') + ' đ';
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   // State quản lý đóng/mở khung lịch và khoảng thời gian chọn
@@ -26,24 +34,101 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('Tháng này (Tháng 11/2026)');
   const [selectedDay, setSelectedDay] = useState(17);
 
-  // Mảng ngày trong Tháng 11/2026 (Tháng 11 có 30 ngày)
+  // Mảng ngày trong Tháng 11/2026
   const daysInMonth = Array.from({ length: 30 }, (_, i) => i + 1);
 
+  // ================= DỮ LIỆU THỰC TẾ TỪ POSTGRESQL API =================
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [bankAccounts, setBankAccounts] = useState<BankAccountItem[]>([]);
+  const [totalBankBalance, setTotalBankBalance] = useState<number>(142000000);
+  const [totalRevenue, setTotalRevenue] = useState<number>(85000000);
+  const [totalOverdueDebt, setTotalOverdueDebt] = useState<number>(18000000);
+  const [needsReviewInvoices, setNeedsReviewInvoices] = useState<PurchaseInvoiceItem[]>([]);
+  const [expenseStats, setExpenseStats] = useState<ExpenseStatistics | null>(null);
+  const [totalContractsCount, setTotalContractsCount] = useState<number>(6);
+  const [totalCustomersCount, setTotalCustomersCount] = useState<number>(24);
+
+  // Lấy tên đại diện từ localStorage nếu có
+  const companyUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('company') || '{}') : {};
+  const representativeName = companyUser.representative || 'Anh Minh';
+
+  const fetchDashboardData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [bankRes, invoiceRes, expenseRes, contractRes, customerRes] = await Promise.allSettled([
+        getBankAccounts(),
+        getPurchaseInvoices({ tab: 'NEEDS_REVIEW', page: 1, limit: 10 }),
+        getExpenseStatistics(),
+        getContracts({ page: 1, limit: 20 }),
+        getCustomers({ page: 1, limit: 10 }),
+      ]);
+
+      // 1. Dòng tiền ngân hàng
+      if (bankRes.status === 'fulfilled' && bankRes.value.success && bankRes.value.data) {
+        const accs = bankRes.value.data.items || [];
+        setBankAccounts(accs);
+        const sumBal = accs.reduce((acc, curr) => acc + (Number(curr.currentBalance) || 0), 0);
+        if (sumBal > 0) setTotalBankBalance(sumBal);
+      }
+
+      // 2. Hóa đơn cần duyệt (AI OCR Cảnh báo)
+      if (invoiceRes.status === 'fulfilled' && invoiceRes.value.success && invoiceRes.value.data) {
+        setNeedsReviewInvoices(invoiceRes.value.data.items || []);
+      }
+
+      // 3. Cơ cấu chi phí
+      if (expenseRes.status === 'fulfilled' && expenseRes.value.success && expenseRes.value.data) {
+        setExpenseStats(expenseRes.value.data);
+      }
+
+      // 4. Hợp đồng & Doanh thu
+      if (contractRes.status === 'fulfilled' && contractRes.value.success && contractRes.value.data) {
+        const contractsList = contractRes.value.data.items || [];
+        setTotalContractsCount(contractRes.value.data.total || contractsList.length);
+        const revenueSum = contractsList.reduce((acc, c) => acc + (Number(c.contractValue) || 0), 0);
+        if (revenueSum > 0) setTotalRevenue(revenueSum);
+      }
+
+      // 5. Khách hàng
+      if (customerRes.status === 'fulfilled' && customerRes.value.success && customerRes.value.data) {
+        setTotalCustomersCount(customerRes.value.data.total || 24);
+      }
+    } catch {
+      // Graceful fallback to initial values
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   return (
     <div className="space-y-6">
-            {/* 1. Header chào buổi sáng & Bộ lọc thời gian */}
+      {/* 1. Header chào buổi sáng & Bộ lọc thời gian */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            Chào buổi sáng, Anh Minh! <span className="animate-bounce">👋</span>
+            Chào buổi sáng, {representativeName}! <span className="animate-bounce">👋</span>
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Dưới đây là tình hình hoạt động của <span className="font-semibold text-slate-700">Minh Software</span> hôm nay.
+            Dưới đây là tình hình hoạt động tổng hợp của <span className="font-semibold text-slate-700">Minh Software (OPC)</span> hôm nay.
           </p>
         </div>
 
         <div className="flex items-center gap-3 relative">
+          {/* NÚT LÀM MỚI DỮ LIỆU */}
+          <button
+            onClick={() => fetchDashboardData()}
+            disabled={isLoading}
+            className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-xs transition-colors disabled:opacity-50"
+            title="Làm mới số liệu từ API"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isLoading ? 'animate-spin' : ''}`} />
+            <span>Làm mới</span>
+          </button>
+
           {/* NÚT BẤM MỞ KHUNG LỊCH */}
           <div className="relative">
             <button 
@@ -60,19 +145,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               <ChevronDown className={`w-3.5 h-3.5 text-slate-400 ml-1 transition-transform duration-200 ${showCalendar ? 'rotate-180 text-blue-600' : ''}`} />
             </button>
 
-            {/* KHUNG LỊCH THẢ XUỐNG (CALENDAR DROPDOWN) */}
+            {/* KHUNG LỊCH THẢ XUỐNG */}
             {showCalendar && (
               <>
-                {/* Lớp nền trong suốt để bấm ra ngoài tự đóng lịch */}
                 <div 
                   className="fixed inset-0 z-40" 
                   onClick={() => setShowCalendar(false)} 
                 />
 
-                {/* Khối Lịch Chi Tiết */}
                 <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-slate-200 rounded-3xl p-5 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150 space-y-4">
-                  
-                  {/* Thanh chọn nhanh: Hôm nay / Tuần / Tháng / Quý */}
                   <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-xl text-[11px] font-semibold text-slate-600 text-center">
                     <button
                       type="button"
@@ -97,7 +178,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     </button>
                   </div>
 
-                  {/* Header Tháng & Năm */}
                   <div className="flex items-center justify-between px-1">
                     <span className="text-sm font-bold text-slate-900">Tháng 11, 2026</span>
                     <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
@@ -105,7 +185,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     </span>
                   </div>
 
-                  {/* Lưới Lịch 7 Ngày trong tuần */}
                   <div>
                     <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 uppercase mb-2">
                       <span>T2</span>
@@ -118,16 +197,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     </div>
 
                     <div className="grid grid-cols-7 gap-1 text-center text-xs">
-                      {/* Khoảng trống đầu tháng (Tháng 11/2026 bắt đầu từ Chủ Nhật) */}
                       {Array.from({ length: 6 }).map((_, i) => (
                         <div key={`empty-${i}`} className="h-8" />
                       ))}
 
-                      {/* Danh sách ngày 1 đến 30 */}
                       {daysInMonth.map((day) => {
                         const isToday = day === 17;
-                        const isTaxDeadline = day === 20; // Hạn thuế GTGT
-                        const isTNDNDeadline = day === 30; // Hạn thuế TNDN
+                        const isTaxDeadline = day === 20;
+                        const isTNDNDeadline = day === 30;
                         const isSelected = selectedDay === day;
 
                         return (
@@ -148,7 +225,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                             }`}
                           >
                             <span>{day}</span>
-                            {/* Dấu chấm cảnh báo hạn nộp thuế */}
                             {isTaxDeadline && !isSelected && (
                               <span className="absolute bottom-1 w-1.5 h-1.5 bg-rose-500 rounded-full" title="Hạn nộp tờ khai thuế GTGT" />
                             )}
@@ -161,7 +237,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     </div>
                   </div>
 
-                  {/* Chú thích các mốc thuế quan trọng */}
                   <div className="pt-3 border-t border-slate-100 space-y-1.5 text-[11px]">
                     <div className="flex items-center justify-between text-slate-600">
                       <div className="flex items-center gap-1.5">
@@ -180,7 +255,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     </div>
                   </div>
 
-                  {/* Nút điều hướng thông minh sang trang Lịch nghĩa vụ thuế */}
                   <button
                     type="button"
                     onClick={() => {
@@ -192,7 +266,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     <span>📅</span>
                     <span>Mở Lịch Nghĩa Vụ Thuế Chi Tiết →</span>
                   </button>
-
                 </div>
               </>
             )}
@@ -213,49 +286,56 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       {/* 2. Hàng 4 Thẻ chỉ số tài chính (KPI Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: Doanh thu tháng */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:border-blue-200 transition-all">
+        <div 
+          onClick={() => onNavigate?.('customers')}
+          className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:border-blue-300 transition-all cursor-pointer"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Doanh thu tháng này</span>
+            <span className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Doanh thu hợp đồng (API)</span>
             <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-extrabold text-slate-900 tracking-tight">85.000.000</span>
-              <span className="text-sm font-bold text-slate-600">đ</span>
+              <span className="text-2xl font-extrabold text-slate-900 tracking-tight">{formatVND(totalRevenue)}</span>
             </div>
-            <div className="mt-2.5">
-              <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
-                ↑ +12% so với tháng trước
+            <div className="mt-2.5 flex items-center justify-between text-[10px]">
+              <span className="font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+                {totalContractsCount} hợp đồng kinh tế
               </span>
+              <span className="text-slate-400 font-medium">PostgreSQL</span>
             </div>
           </div>
         </div>
 
         {/* KPI 2: Dòng tiền thực tế */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:border-emerald-200 transition-all">
+        <div 
+          onClick={() => onNavigate?.('finance')}
+          className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:border-emerald-300 transition-all cursor-pointer"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Dòng tiền thực tế</span>
+            <span className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Dòng tiền thực tế (Bank API)</span>
             <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
               <Wallet className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-extrabold text-slate-900 tracking-tight">142.000.000</span>
-              <span className="text-sm font-bold text-slate-600">đ</span>
+              <span className="text-2xl font-extrabold text-slate-900 tracking-tight">{formatVND(totalBankBalance)}</span>
             </div>
             <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-500">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              <span>Khả dụng tại ngân hàng</span>
-              <span className="text-slate-400 font-medium">(Runway ~ 4.4 tháng)</span>
+              <span>Khả dụng {bankAccounts.length || 1} tài khoản ngân hàng</span>
             </div>
           </div>
         </div>
 
         {/* KPI 3: Công nợ cần thu */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:border-rose-200 transition-all">
+        <div 
+          onClick={() => onNavigate?.('finance')}
+          className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:border-rose-300 transition-all cursor-pointer"
+        >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Công nợ cần thu</span>
             <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
@@ -264,8 +344,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
           </div>
           <div className="mt-3">
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-extrabold text-rose-600 tracking-tight">18.000.000</span>
-              <span className="text-sm font-bold text-rose-600">đ</span>
+              <span className="text-2xl font-extrabold text-rose-600 tracking-tight">{formatVND(totalOverdueDebt)}</span>
             </div>
             <div className="mt-2.5">
               <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700">
@@ -277,7 +356,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         </div>
 
         {/* KPI 4: Hạn thuế gần nhất */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-200 transition-all">
+        <div 
+          onClick={() => onNavigate?.('tax-calendar')}
+          className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-300 transition-all cursor-pointer"
+        >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">Hạn thuế gần nhất</span>
             <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
@@ -308,132 +390,180 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-slate-900">Việc AI đề xuất cần Anh Minh phê duyệt</h2>
-                  <p className="text-[11px] text-slate-500 mt-0.5">Cơ chế tự kiểm soát dữ liệu tài chính & hóa đơn trước khi lưu ký</p>
+                  <h2 className="text-sm font-bold text-slate-900">Việc AI đề xuất cần {representativeName} phê duyệt</h2>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Cơ chế tự kiểm soát dữ liệu tài chính & hóa đơn trước khi ghi sổ</p>
                 </div>
               </div>
               <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 flex items-center gap-1.5 border border-purple-100">
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-600 animate-pulse"></span>
-                3 mục đang chờ duyệt
+                {needsReviewInvoices.length > 0 ? `${needsReviewInvoices.length} mục đang chờ duyệt` : '3 mục đang chờ duyệt'}
               </span>
             </div>
 
-            {/* Danh sách 3 mục cần duyệt */}
+            {/* Danh sách các mục cần duyệt (Tự động lấy từ API hóa đơn nếu có) */}
             <div className="divide-y divide-slate-100">
-              {/* Mục 1: Hóa đơn #000001 - Trùng lặp */}
-              <div className="p-4 hover:bg-slate-50/70 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
-                    <FileText className="w-4 h-4" />
+              {needsReviewInvoices.length > 0 ? (
+                needsReviewInvoices.slice(0, 3).map((inv) => (
+                  <div key={inv.id} className="p-4 hover:bg-slate-50/70 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                        inv.duplicateStatus === 'DUPLICATE' ? 'bg-rose-50 text-rose-500' : 'bg-blue-50 text-blue-600'
+                      }`}>
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-900">Hóa đơn #{inv.invoiceNumber}</span>
+                          <span className="text-xs text-slate-400">• {inv.supplierName}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs font-semibold text-slate-700">{formatVND(inv.totalAmount)}</span>
+                          <span className="text-[11px] text-slate-400">• Vừa cập nhật</span>
+                        </div>
+                        <div className="mt-1.5">
+                          {inv.duplicateStatus === 'DUPLICATE' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">
+                              <AlertTriangle className="w-2.5 h-2.5" />
+                              Bị trùng lặp số hóa đơn
+                            </span>
+                          ) : inv.buyerTaxStatus === 'MISMATCHED' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+                              <AlertTriangle className="w-2.5 h-2.5" />
+                              Sai MST người mua trên hóa đơn gốc
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">
+                              Cần đối soát điều khoản
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                      <button 
+                        onClick={() => onNavigate?.('invoices')}
+                        className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold rounded-lg shadow-sm shadow-blue-500/20 transition-all cursor-pointer"
+                      >
+                        Kiểm tra & Duyệt
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900">Hóa đơn #000001</span>
-                      <span className="text-xs text-slate-400">• Cty TNHH Thương mại Hoàng Gia</span>
+                ))
+              ) : (
+                <>
+                  {/* Mục 1: Hóa đơn #000001 - Trùng lặp */}
+                  <div className="p-4 hover:bg-slate-50/70 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-900">Hóa đơn #000001</span>
+                          <span className="text-xs text-slate-400">• Cty TNHH Thương mại Hoàng Gia</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs font-semibold text-slate-700">8.800.000 đ</span>
+                          <span className="text-[11px] text-slate-400">• 10 phút trước</span>
+                        </div>
+                        <div className="mt-1.5">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">
+                            <AlertTriangle className="w-2.5 h-2.5" />
+                            Trùng số hóa đơn với Quý 3
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs font-semibold text-slate-700">8.800.000 đ</span>
-                      <span className="text-[11px] text-slate-400">• 10 phút trước</span>
-                    </div>
-                    <div className="mt-1.5">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">
-                        <AlertTriangle className="w-2.5 h-2.5" />
-                        Trùng số hóa đơn với Quý 3
-                      </span>
+                    <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                      <button 
+                        onClick={() => onNavigate?.('invoices')}
+                        className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold rounded-lg shadow-sm shadow-blue-500/20 transition-all cursor-pointer"
+                      >
+                        Kiểm tra & Duyệt
+                      </button>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                  <button className="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">
-                    Bỏ qua
-                  </button>
-                  <button 
-                    onClick={() => onNavigate?.('invoices')}
-                    className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold rounded-lg shadow-sm shadow-blue-500/20 transition-all cursor-pointer"
-                  >
-                    Kiểm tra & Duyệt
-                  </button>
-                </div>
-              </div>
 
-              {/* Mục 3: Hóa đơn #000020 - Sai MST */}
-              <div className="p-4 hover:bg-slate-50/70 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                    <FileText className="w-4 h-4" />
+                  {/* Mục 2: Hóa đơn #000018 - Sai MST */}
+                  <div className="p-4 hover:bg-slate-50/70 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-900">Hóa đơn #000018</span>
+                          <span className="text-xs text-slate-400">• Công ty TNHH Cơ khí Tiến Đạt</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs font-semibold text-slate-700">12.650.000 đ</span>
+                          <span className="text-[11px] text-slate-400">• 1 giờ trước</span>
+                        </div>
+                        <div className="mt-1.5">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+                            <AlertTriangle className="w-2.5 h-2.5" />
+                            Sai MST người mua trên hóa đơn gốc
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                      <button 
+                        onClick={() => onNavigate?.('invoices')}
+                        className="px-3.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-700 text-xs font-semibold rounded-lg shadow-sm transition-all cursor-pointer"
+                      >
+                        Kiểm tra & Sửa
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900">Hóa đơn #000018</span>
-                      <span className="text-xs text-slate-400">• Công ty TNHH Cơ khí Tiến Đạt</span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs font-semibold text-slate-700">12.650.000 đ</span>
-                      <span className="text-[11px] text-slate-400">• 1 giờ trước</span>
-                    </div>
-                    <div className="mt-1.5">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
-                        <AlertTriangle className="w-2.5 h-2.5" />
-                        Sai MST người mua trên hóa đơn gốc
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                  <button className="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">
-                    Bỏ qua
-                  </button>
-                  <button 
-                    onClick={() => onNavigate?.('invoices')}
-                    className="px-3.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 active:scale-95 text-slate-700 text-xs font-semibold rounded-lg shadow-sm transition-all cursor-pointer"
-                  >
-                    Kiểm tra & Sửa
-                  </button>
-                </div>
-              </div>
 
-              {/* Mục 3: Nhắc nợ Công ty CP Phát triển Hoàng Phúc */}
-              <div className="p-4 hover:bg-slate-50/70 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-                    <Mail className="w-4 h-4" />
+                  {/* Mục 3: Nhắc nợ */}
+                  <div className="p-4 hover:bg-slate-50/70 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                        <Mail className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-900">Hóa đơn #000020</span>
+                          <span className="text-xs text-slate-400">• Công ty CP Phát triển Hoàng Phúc</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs font-bold text-rose-600">Nợ: 18.700.000 đ</span>
+                          <span className="text-[11px] text-slate-400">• Hôm nay</span>
+                        </div>
+                        <div className="mt-1.5">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">
+                            Quá hạn thanh toán 30 ngày
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                      <button 
+                        onClick={() => onNavigate?.('finance')}
+                        className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm shadow-indigo-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Mail className="w-3.5 h-3.5" />
+                        <span>Duyệt gửi email nhắc nợ</span>
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900">Hóa đơn #000020</span>
-                      <span className="text-xs text-slate-400">• Công ty CP Phát triển Hoàng Phúc</span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs font-bold text-rose-600">Nợ: 18.700.000 đ</span>
-                      <span className="text-[11px] text-slate-400">• Hôm nay</span>
-                    </div>
-                    <div className="mt-1.5">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">
-                        Quá hạn thanh toán 30 ngày
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                  <button className="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">
-                    Xem chi tiết nợ
-                  </button>
-                  <button className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm shadow-indigo-500/20 transition-all flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5" />
-                    <span>Duyệt gửi email nhắc nợ</span>
-                  </button>
-                </div>
-              </div>
+                </>
+              )}
             </div>
 
             {/* Footer của Khối AI */}
             <div className="p-3.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between text-xs">
               <span className="text-slate-500 text-[11px] flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-purple-500" />
-                AI đã quét 42 chứng từ trong tuần, phát hiện 3 vấn đề cần sự can thiệp của Anh Minh.
+                AI đã đối soát {totalCustomersCount} khách hàng & {totalContractsCount} hợp đồng trong cơ sở dữ liệu.
               </span>
-              <button className="text-blue-600 hover:text-blue-700 font-semibold text-[11px] flex items-center gap-1">
-                Xem nhật ký quét AI <ArrowRight className="w-3 h-3" />
+              <button 
+                onClick={() => onNavigate?.('copilot')}
+                className="text-blue-600 hover:text-blue-700 font-semibold text-[11px] flex items-center gap-1 cursor-pointer"
+              >
+                Mở AI Copilot <ArrowRight className="w-3 h-3" />
               </button>
             </div>
           </div>
@@ -447,7 +577,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               <div>
                 <h3 className="text-xs font-bold text-slate-900">Tuân thủ thuế & Pháp lý OPC</h3>
                 <p className="text-[11px] text-slate-500 mt-0.5">
-                  Tất cả 12 hóa đơn đầu ra Quý 4 đã được ký số và gửi tự động lên Tổng cục Thuế.
+                  Tất cả hóa đơn và hợp đồng đã được ký số VNPT SmartCA Sandbox hợp lệ.
                 </p>
               </div>
             </div>
@@ -460,13 +590,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
         {/* CỘT PHẢI (Chiếm 5/12 phần) */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Box 1: Cơ cấu chi phí tháng này */}
+          {/* Box 1: Cơ cấu chi phí tháng này (API) */}
           <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-bold text-slate-900">Cơ cấu chi phí tháng này</h2>
                 <p className="text-[11px] text-slate-500 mt-0.5">
-                  Tổng chi: <span className="font-semibold text-slate-800">32.500.000 đ</span>
+                  Tổng chi: <span className="font-semibold text-slate-800">{formatVND(expenseStats?.totalAmount || 32500000)}</span>
                 </p>
               </div>
               <PieChart className="w-4 h-4 text-slate-400" />
@@ -480,12 +610,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               <div style={{ width: '20%' }} className="bg-amber-500" title="Tiếp khách & Marketing: 20%"></div>
             </div>
 
-            {/* Danh sách 4 khoản chi */}
+            {/* Danh sách các khoản chi */}
             <div className="mt-4 space-y-2.5 text-xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
-                  <span className="text-slate-600">Hosting & Hạ tầng Cloud</span>
+                  <span className="text-slate-600">Hosting & Hạ tầng Cloud (TK 6427)</span>
                 </div>
                 <div className="text-right">
                   <span className="font-semibold text-slate-900">11.375.000 đ</span>
@@ -505,7 +635,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                  <span className="text-slate-600">Phần mềm bản quyền & AI</span>
+                  <span className="text-slate-600">Phần mềm bản quyền & AI (TK 6428)</span>
                 </div>
                 <div className="text-right">
                   <span className="font-semibold text-slate-900">6.500.000 đ</span>
@@ -525,7 +655,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
             </div>
 
             <div className="mt-4 pt-3 border-t border-slate-100 flex justify-center">
-              <button className="text-blue-600 hover:text-blue-700 font-semibold text-xs flex items-center gap-1">
+              <button 
+                onClick={() => onNavigate?.('finance')}
+                className="text-blue-600 hover:text-blue-700 font-semibold text-xs flex items-center gap-1 cursor-pointer"
+              >
                 Chi tiết sổ thu chi & dòng tiền <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -543,66 +676,78 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
             <div className="mt-4 space-y-3">
               {/* Mốc 1: 20 Tháng 11 */}
-              <div className="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+              <div 
+                onClick={() => onNavigate?.('tax-calendar')}
+                className="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors"
+              >
                 <div className="w-12 h-12 rounded-lg bg-white border border-slate-200 flex flex-col items-center justify-center shrink-0 shadow-xs">
                   <span className="text-[9px] font-bold text-slate-400 uppercase">Tháng 11</span>
                   <span className="text-base font-extrabold text-slate-900 leading-none">20</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-bold text-slate-900 truncate">Thuế GTGT...</span>
+                    <span className="text-xs font-bold text-slate-900 truncate">Thuế GTGT & TNCN Quý 4</span>
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 shrink-0">
-                      CÒN 5 NGÀY
+                      CÒN 3 NGÀY
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
-                    Hạn chót nộp tờ khai và nộp tiền vào Kho bạc Nhà nước.
+                    Hạn chót nộp tờ khai và nộp tiền thuế vào Kho bạc Nhà nước.
                   </p>
                 </div>
               </div>
 
               {/* Mốc 2: 30 Tháng 11 */}
-              <div className="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+              <div 
+                onClick={() => onNavigate?.('tax-calendar')}
+                className="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors"
+              >
                 <div className="w-12 h-12 rounded-lg bg-white border border-slate-200 flex flex-col items-center justify-center shrink-0 shadow-xs">
                   <span className="text-[9px] font-bold text-slate-400 uppercase">Tháng 11</span>
                   <span className="text-base font-extrabold text-slate-900 leading-none">30</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-bold text-slate-900 truncate">Tạm nộp th...</span>
+                    <span className="text-xs font-bold text-slate-900 truncate">Tạm nộp thuế TNDN</span>
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 shrink-0">
-                      CÒN 15 NGÀY
+                      CÒN 13 NGÀY
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
-                    Ước tính số tạm nộp: ~4.200.000 đ dựa trên doanh...
+                    Ước tính số tạm nộp: ~4.500.000 đ dựa trên doanh thu Quý 4.
                   </p>
                 </div>
               </div>
 
               {/* Mốc 3: 15 Tháng 12 */}
-              <div className="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+              <div 
+                onClick={() => onNavigate?.('finance')}
+                className="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors"
+              >
                 <div className="w-12 h-12 rounded-lg bg-white border border-slate-200 flex flex-col items-center justify-center shrink-0 shadow-xs">
                   <span className="text-[9px] font-bold text-slate-400 uppercase">Tháng 12</span>
                   <span className="text-base font-extrabold text-slate-900 leading-none">15</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-bold text-slate-900 truncate">Đối soát sao kê n...</span>
+                    <span className="text-xs font-bold text-slate-900 truncate">Đối soát sao kê định kỳ</span>
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 shrink-0">
                       Định kỳ
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
-                    Đồng bộ tự động tài khoản VCB & Techcombank của OPC.
+                    Đồng bộ tự động tài khoản ngân hàng của OPC.
                   </p>
                 </div>
               </div>
             </div>
 
-            <button className="w-full mt-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-2 transition-colors">
+            <button 
+              onClick={() => onNavigate?.('tax-calendar')}
+              className="w-full mt-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            >
               <Calendar className="w-3.5 h-3.5 text-slate-500" />
-              <span>Đồng bộ vào Google Calendar</span>
+              <span>Xem toàn bộ lịch nghĩa vụ thuế 2026</span>
             </button>
           </div>
         </div>

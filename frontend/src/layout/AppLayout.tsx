@@ -21,7 +21,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
       {/* Vùng nội dung chính */}
       <div className="flex-1 flex flex-col min-w-0">
-        <Header onUploadInvoiceClick={() => setActiveTab('invoices')} />
+        <Header 
+          onUploadInvoiceClick={() => setActiveTab('invoices')} 
+          onNavigate={setActiveTab}
+        />
         <main className="flex-1 p-8 overflow-y-auto">
           {children({ activeTab, setActiveTab })}
         </main>
