@@ -1,4 +1,4 @@
-﻿import {
+import {
   IsDateString,
   IsIn,
   IsNotEmpty,
@@ -6,15 +6,27 @@
   IsOptional,
   IsPositive,
   IsString,
+  Matches,
   MaxLength,
+  MinLength,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
+
+const trimString = ({ value }: { value: unknown }) =>
+  typeof value === 'string' ? value.trim() : value;
 
 export class CreateExpenseDto {
+  @Transform(trimString)
   @IsNotEmpty({ message: 'Danh mục chi phí không được để trống' })
   @IsString({ message: 'Danh mục chi phí phải là chuỗi ký tự' })
+  @MinLength(2, { message: 'Danh mục chi phí phải có ít nhất 2 ký tự' })
   @MaxLength(100, { message: 'Danh mục chi phí tối đa 100 ký tự' })
+  @Matches(/^(?=.*[\p{L}])[\p{L}\p{N}\s&().\-\/,:_]+$/u, {
+    message: 'Danh mục chi phí phải chứa chữ cái và không có ký tự đặc biệt lạ',
+  })
   category!: string;
 
+  @Transform(trimString)
   @IsOptional()
   @IsString({ message: 'Mô tả chi phí phải là chuỗi ký tự' })
   description?: string;

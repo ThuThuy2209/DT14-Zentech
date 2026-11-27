@@ -5,10 +5,18 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   Min,
+  MinLength,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
+
+const trimOptionalString = ({ value }: { value: unknown }) => {
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  return trimmed === '' ? undefined : trimmed;
+};
 
 export class CreateSalesInvoiceDto {
   @IsNotEmpty({ message: 'customerId không được để trống' })
@@ -26,9 +34,15 @@ export class CreateSalesInvoiceDto {
   @IsInt({ message: 'acceptanceId phải là số nguyên' })
   acceptanceId?: number;
 
+  @Transform(trimOptionalString)
   @IsOptional()
   @IsString({ message: 'Mã số hóa đơn phải là chuỗi' })
+  @MinLength(2, { message: 'Mã số hóa đơn phải có ít nhất 2 ký tự' })
   @MaxLength(100, { message: 'Mã số hóa đơn tối đa 100 ký tự' })
+  @Matches(/^[A-Za-z0-9\-_/]+$/, {
+    message:
+      'Mã số hóa đơn chỉ được chứa chữ cái không dấu, chữ số và các ký tự -, _, /',
+  })
   invoiceNumber?: string;
 
   @IsOptional()
