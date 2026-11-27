@@ -15,11 +15,10 @@ import {
   PieChart, 
   ChevronDown,
   RefreshCw,
-  Building2
 } from 'lucide-react';
 import { getBankAccounts, getExpenseStatistics, type BankAccountItem, type ExpenseStatistics } from '../services/financeService';
 import { getPurchaseInvoices, type PurchaseInvoiceItem } from '../services/invoiceService';
-import { getContracts, type ContractItem } from '../services/contractService';
+import { getContracts } from '../services/contractService';
 import { getCustomers } from '../services/customerService';
 
 interface DashboardViewProps {
@@ -42,7 +41,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   const [bankAccounts, setBankAccounts] = useState<BankAccountItem[]>([]);
   const [totalBankBalance, setTotalBankBalance] = useState<number>(142000000);
   const [totalRevenue, setTotalRevenue] = useState<number>(85000000);
-  const [totalOverdueDebt, setTotalOverdueDebt] = useState<number>(18000000);
+  const [totalOverdueDebt] = useState<number>(18000000);
   const [needsReviewInvoices, setNeedsReviewInvoices] = useState<PurchaseInvoiceItem[]>([]);
   const [expenseStats, setExpenseStats] = useState<ExpenseStatistics | null>(null);
   const [totalContractsCount, setTotalContractsCount] = useState<number>(6);

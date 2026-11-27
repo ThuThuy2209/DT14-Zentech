@@ -31,10 +31,7 @@ import {
   type CreateCustomerPayload,
 } from '../services/customerService';
 import {
-  getContracts,
-  createContract,
   signContractSandbox,
-  type ContractItem,
 } from '../services/contractService';
 
 interface Contract {
