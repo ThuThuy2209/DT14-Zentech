@@ -240,7 +240,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                     <div className="flex items-center justify-between text-slate-600">
                       <div className="flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-rose-500" />
-                        <span>20/11: Hạn nộp thuế GTGT & TNCN</span>
+                        <span>20/11: Hạn nộp thuế &amp; Đóng BHXH</span>
                       </div>
                       <span className="text-rose-600 font-bold">Còn 3 ngày</span>
                     </div>
@@ -685,13 +685,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-bold text-slate-900 truncate">Thuế GTGT & TNCN Quý 4</span>
+                    <span className="text-xs font-bold text-slate-900 truncate">Thuế GTGT, TNCN &amp; Đóng BHXH</span>
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 shrink-0">
                       CÒN 3 NGÀY
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
-                    Hạn chót nộp tờ khai và nộp tiền thuế vào Kho bạc Nhà nước.
+                    Hạn chót nộp tờ khai thuế và tiền đóng BHXH, BHYT bắt buộc cho chủ OPC.
                   </p>
                 </div>
               </div>

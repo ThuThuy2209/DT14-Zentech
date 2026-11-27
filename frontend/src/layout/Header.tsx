@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  Search, Bell, Plus, Cpu, FileText, AlertTriangle, CheckCircle2, Mail, 
+  Search, Bell, Plus, Cpu, FileText, Mail, 
   X, ArrowRight, ShieldCheck, Users, Landmark, Zap, Sparkles, Command
 } from 'lucide-react';
 
