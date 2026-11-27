@@ -744,6 +744,9 @@ export const InvoiceView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'ALL' | 'NEEDS_REVIEW' | 'VALID' | 'REJECTED'>('NEEDS_REVIEW');
   const [invoicesList, setInvoicesList] = useState<PurchaseInvoiceItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [pageInput, setPageInput] = useState<string>('1');
+  const [newlyUploadedId, setNewlyUploadedId] = useState<string | null>(null);
+  const [newlyUploadedIndex, setNewlyUploadedIndex] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isProcessingAction, setIsProcessingAction] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
@@ -770,8 +773,13 @@ export const InvoiceView: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Đồng bộ số trang hiển thị trong ô nhập khi currentIndex thay đổi
+  useEffect(() => {
+    setPageInput(String(currentIndex + 1));
+  }, [currentIndex]);
+
   // ================= Tải danh sách hóa đơn từ API =================
-  const fetchInvoices = useCallback(async () => {
+  const fetchInvoices = useCallback(async (targetInvoiceId?: string, selectLast?: boolean) => {
     setIsLoading(true);
     try {
       const res = await getPurchaseInvoices({
@@ -781,11 +789,32 @@ export const InvoiceView: React.FC = () => {
       });
 
       if (res.success && res.data) {
-        setInvoicesList(res.data.items || []);
+        const items = res.data.items || [];
+        setInvoicesList(items);
         if (res.data.tabCounts) {
           setTabCounts(res.data.tabCounts);
         }
-        setCurrentIndex(0);
+
+        // Tự động nhảy đến hóa đơn mục tiêu (hoặc hóa đơn vừa tải lên)
+        if (targetInvoiceId) {
+          const foundIdx = items.findIndex(
+            (inv: PurchaseInvoiceItem) => String(inv.id) === String(targetInvoiceId) || inv.invoiceNumber === String(targetInvoiceId)
+          );
+          if (foundIdx !== -1) {
+            setCurrentIndex(foundIdx);
+            setNewlyUploadedIndex(foundIdx);
+          } else if (selectLast && items.length > 0) {
+            const lastIdx = items.length - 1;
+            setCurrentIndex(lastIdx);
+            setNewlyUploadedIndex(lastIdx);
+          }
+        } else if (selectLast && items.length > 0) {
+          const lastIdx = items.length - 1;
+          setCurrentIndex(lastIdx);
+          setNewlyUploadedIndex(lastIdx);
+        } else {
+          setCurrentIndex(prev => (prev < items.length ? prev : 0));
+        }
       } else {
         setApiNotice({
           type: 'error',
@@ -812,6 +841,16 @@ export const InvoiceView: React.FC = () => {
   const handlePrev = () => setCurrentIndex(i => Math.max(0, i - 1));
   const handleNext = () => setCurrentIndex(i => Math.min(totalInvoices - 1, i + 1));
 
+  // Nhảy đến hóa đơn theo số thứ tự nhập vào ô (1 - totalInvoices)
+  const handlePageJump = () => {
+    const pageNum = parseInt(pageInput, 10);
+    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalInvoices) {
+      setCurrentIndex(pageNum - 1);
+    } else {
+      setPageInput(String(currentIndex + 1));
+    }
+  };
+
   // ================= Xử lý Upload file hóa đơn =================
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -821,11 +860,22 @@ export const InvoiceView: React.FC = () => {
     try {
       const res = await uploadPurchaseInvoice(file);
       if (res.success) {
+        const uploadedData = res.data;
+        const uploadedId = uploadedData?.id || uploadedData?.invoiceNumber;
+        if (uploadedId) {
+          setNewlyUploadedId(uploadedId);
+        }
+
+        // Tự động chuyển sang tab "Tất cả" (ALL) để thấy toàn bộ danh sách gồm hóa đơn mới
+        setActiveTab('ALL');
+
+        // Tải lại danh sách và nhảy trực tiếp đến hóa đơn mới vừa tải
+        await fetchInvoices(uploadedId, true);
+
         setApiNotice({
           type: 'success',
-          message: `Tải lên hóa đơn "${file.name}" và bóc tách AI thành công!`,
+          message: `Tải lên hóa đơn "${file.name}" và bóc tách AI thành công! Hệ thống đã tự động chuyển đến hóa đơn mới vừa tải.`,
         });
-        fetchInvoices();
       } else {
         alert(res.message || 'Tải file thất bại');
       }
@@ -970,20 +1020,32 @@ export const InvoiceView: React.FC = () => {
 
       {/* Thông báo API Toast */}
       {apiNotice && (
-        <div className={`p-3.5 rounded-xl text-xs flex items-center justify-between shadow-sm animate-in fade-in duration-200 ${
+        <div className={`p-3.5 rounded-xl text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-sm animate-in fade-in duration-200 ${
           apiNotice.type === 'success' 
             ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
             : 'bg-rose-50 text-rose-800 border border-rose-200'
         }`}>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {apiNotice.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             ) : (
-              <AlertCircle className="w-4 h-4 text-rose-600" />
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             )}
             <span className="font-semibold">{apiNotice.message}</span>
+            {newlyUploadedIndex !== null && totalInvoices > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCurrentIndex(newlyUploadedIndex);
+                }}
+                className="ml-2 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] shadow-xs transition-all cursor-pointer flex items-center gap-1"
+              >
+                <span>Xem ngay hóa đơn vừa tải ({newlyUploadedIndex + 1}/{totalInvoices})</span>
+                <span>→</span>
+              </button>
+            )}
           </div>
-          <button onClick={() => setApiNotice(null)} className="text-slate-400 hover:text-slate-600 p-0.5 rounded">
+          <button onClick={() => setApiNotice(null)} className="text-slate-400 hover:text-slate-600 p-0.5 rounded self-end sm:self-center cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -1067,28 +1129,61 @@ export const InvoiceView: React.FC = () => {
 
         {/* Điều hướng chuyển hóa đơn */}
         {totalInvoices > 0 && currentInvoice && (
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <span className="font-medium">
-              Đang đối chiếu:{' '}
+          <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap justify-end">
+            <span className="font-medium flex items-center gap-1.5">
+              <span>Đang đối chiếu:</span>
               <span className="text-blue-600 font-bold font-mono">
-                HD-{currentInvoice.invoiceNumber} ({currentInvoice.supplierName})
+                HD-{currentInvoice.invoiceNumber}
               </span>
+              <span className="text-slate-600 font-semibold truncate max-w-[200px]" title={currentInvoice.supplierName}>
+                ({currentInvoice.supplierName})
+              </span>
+              {(String(currentInvoice.id) === String(newlyUploadedId) || currentIndex === newlyUploadedIndex) && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200 animate-pulse shrink-0">
+                  ✨ Vừa tải lên
+                </span>
+              )}
             </span>
-            <div className="flex items-center gap-1 ml-2">
+            <div className="flex items-center gap-1.5 ml-2">
               <button
                 onClick={handlePrev}
                 disabled={currentIndex === 0}
-                className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-slate-600 cursor-pointer"
+                title="Hóa đơn trước"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="px-2 font-semibold text-slate-700">
-                {currentIndex + 1} / {totalInvoices}
-              </span>
+
+              {/* Ô NHẬP SỐ ĐỂ DI CHUYỂN ĐẾN HÓA ĐƠN BẤT KỲ (XÓA NHẬP SỐ THEO YÊU CẦU) */}
+              <div className="flex items-center gap-1 bg-white border border-slate-300 rounded-lg px-1.5 py-0.5 shadow-2xs">
+                <input
+                  type="text"
+                  value={pageInput}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || /^\d+$/.test(val)) {
+                      setPageInput(val);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handlePageJump();
+                      (e.target as HTMLInputElement).blur();
+                    }
+                  }}
+                  onBlur={handlePageJump}
+                  className="w-9 h-6 text-center font-bold text-blue-700 bg-blue-50/60 border border-blue-200 rounded text-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500/30 focus:bg-white transition-all cursor-text"
+                  title={`Xóa hoặc nhập số thứ tự hóa đơn (1 - ${totalInvoices}) rồi nhấn Enter để chuyển đến`}
+                />
+                <span className="text-slate-400 font-semibold text-xs">/</span>
+                <span className="font-bold text-slate-700 text-xs pr-1">{totalInvoices}</span>
+              </div>
+
               <button
                 onClick={handleNext}
                 disabled={currentIndex >= totalInvoices - 1}
-                className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-slate-600 cursor-pointer"
+                title="Hóa đơn tiếp theo"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
