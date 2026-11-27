@@ -63,6 +63,49 @@ def clean_json_response(text: str) -> str:
     return text.strip()
 
 
+def _is_offline_mode(allow_mock: bool = False) -> bool:
+    """Kiểm tra xem dịch vụ có đang chạy ở chế độ offline/mock hoặc thiếu Gemini API key hay không."""
+    api_key = settings.GEMINI_API_KEY.strip() or os.environ.get("GEMINI_API_KEY", "").strip()
+    is_mock_enabled = (
+        allow_mock
+        or settings.USE_MOCK_AI
+        or os.environ.get("USE_MOCK_AI", "false").lower() == "true"
+    )
+    return not api_key or is_mock_enabled or genai is None or types is None
+
+
+def _call_gemini_structured(
+    prompt: str,
+    response_schema,
+    temperature: float = 0.2,
+) -> Optional[str]:
+    """Gọi Gemini API với danh sách model dự phòng, trả về chuỗi JSON sạch hoặc None nếu thất bại."""
+    models_to_try = list(
+        dict.fromkeys([settings.DEFAULT_LLM_MODEL, "gemini-2.5-flash"])
+    )
+    try:
+        client = get_genai_client()
+        for model_name in models_to_try:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        response_schema=response_schema,
+                        temperature=temperature,
+                    ),
+                )
+                if response and response.text:
+                    return clean_json_response(response.text)
+            except Exception as api_err:
+                print(f"[AI Agent] Model '{model_name}' báo lỗi: {api_err}")
+                continue
+    except Exception as init_err:
+        print(f"[AI Agent] Không thể khởi tạo Gemini client: {init_err}")
+    return None
+
+
 def parse_invoice_heuristically(raw_text: str) -> Optional[InvoiceExtractSchema]:
     """
     Bóc tách thông minh dựa trên biểu thức chính quy (Regex Heuristic)
@@ -199,32 +242,122 @@ def get_mock_invoice_data(raw_text: str = "") -> InvoiceExtractSchema:
 def extract_invoice_structured_data(
     raw_text: str, allow_mock: bool = False
 ) -> InvoiceExtractSchema:
-    """Trich xuat du lieu hoa don voi fallback hoan toan offline."""
-    heuristic_res = parse_invoice_heuristically(raw_text)
-    if heuristic_res:
-        return heuristic_res
+    """
+    Sử dụng Gemini LLM để bóc tách văn bản thô thành JSON chuẩn hóa đơn
+    và định khoản tài khoản kế toán chi phí theo Thông tư 133/2016/TT-BTC.
+    Tự động fallback về Regex Heuristic / Mock nếu ở chế độ offline hoặc Gemini API lỗi.
+    """
+    if not raw_text or not raw_text.strip():
+        raise ValueError("Văn bản bóc tách rỗng, không thể phân tích hóa đơn.")
+
+    if _is_offline_mode(allow_mock=allow_mock):
+        return get_mock_invoice_data(raw_text)
+
+    prompt = f"""
+    Bạn là chuyên gia kế toán Việt Nam chuyên nghiệp cho doanh nghiệp vừa và nhỏ (áp dụng Thông tư 133/2016/TT-BTC).
+    Nhiệm vụ của bạn là đọc kỹ văn bản thô trích xuất từ hóa đơn mua vào dưới đây, bóc tách chính xác các trường dữ liệu và định khoản tài khoản chi phí phù hợp.
+
+    THÔNG TIN CÔNG TY NGƯỜI MUA (ĐỐI CHIẾU):
+    - Tên công ty: {settings.COMPANY_NAME}
+    - Mã số thuế: {settings.COMPANY_TAX_ID}
+
+    QUY TẮC BÓC TÁCH & ĐỊNH KHOẢN:
+    1. Thông tin hóa đơn:
+       - Số hóa đơn (invoice_number): định dạng chuỗi số hoặc ký hiệu hóa đơn (VD: 0001234, 1234).
+       - Ngày hóa đơn (invoice_date): chuẩn YYYY-MM-DD (VD: 2026-11-06).
+       - Bên bán / Nhà cung cấp (supplier_name, supplier_tax_id): đơn vị phát hành hóa đơn.
+       - Bên mua / Khách hàng (buyer_name, buyer_tax_id): đơn vị mua nhận hóa đơn.
+       - Tiền hàng (subtotal): tổng tiền hàng chưa thuế (số thực nguyên thủy, không dấu chấm/phẩy phân cách hàng nghìn).
+       - Tiền thuế (vat_amount): thuế GTGT.
+       - Tổng tiền (total_amount): tổng thanh toán đã bao gồm thuế.
+       - Chi tiết hàng hóa (items): danh sách các mặt hàng gồm name, unit, quantity, unit_price, total_price.
+
+    2. Gợi ý tài khoản chi phí (suggested_account) theo Thông tư 133/2016/TT-BTC:
+       - "642" (Chi phí quản lý doanh nghiệp): Văn phòng phẩm, mực in, internet, điện thoại, tiếp khách, thuê ngoài thông thường, chi phí quản trị chung...
+       - "153" (Công cụ, dụng cụ): Trang thiết bị văn phòng, máy in, linh kiện máy tính, bàn ghế... giá trị < 30 triệu đồng.
+       - "152" (Nguyên liệu, vật liệu): Linh kiện, vật tư phục vụ trực tiếp kỹ thuật/sản xuất.
+       - "242" (Chi phí trả trước): Bản quyền phần mềm năm, server cloud/hosting nhiều tháng, thuê văn phòng trả trước.
+       - "211" (Tài sản cố định): Thiết bị, máy móc có giá trị >= 30 triệu đồng và dùng trên 1 năm.
+       - "635" (Chi phí tài chính): Phí chuyển tiền, lãi vay...
+
+    3. Diễn giải kế toán (accounting_reason):
+       - Nêu ngắn gọn, rõ ràng căn cứ phân loại mặt hàng này vào tài khoản đã chọn theo Thông tư 133/2016/TT-BTC.
+
+    4. Cờ cảnh báo (flags):
+       - Để mảng rỗng [] mặc định.
+
+    Văn bản hóa đơn thô:
+    ---
+    {raw_text}
+    ---
+    """
+
+    cleaned_text = _call_gemini_structured(prompt, InvoiceExtractSchema, temperature=0.1)
+    if cleaned_text:
+        try:
+            return InvoiceExtractSchema.model_validate_json(cleaned_text)
+        except Exception as val_err:
+            print(f"[AI Agent] Lỗi parse JSON từ Gemini: {val_err}")
+
     return get_mock_invoice_data(raw_text)
+
 
 
 def generate_reminder_email(request: ReminderEmailRequest) -> ReminderEmailData:
     """
-    Soan thao ban nhap email nhac no qua han theo nguyen tac Human-in-the-Loop.
+    Sử dụng Gemini để soạn thảo bản nháp email nhắc nợ quá hạn
+    theo nguyên tắc Human-in-the-Loop (giữ trạng thái DRAFT chờ duyệt).
+    Tự động fallback về template chuẩn khi offline hoặc Gemini API lỗi.
     """
     formatted_amount = f"{request.amount:,.0f}".replace(",", ".")
     recipient = request.recipient_email or "accounting@customer.com"
 
-    fallback_subject = f"[Thong bao] Nhac no qua han thanh toan - Hoa don #{request.invoice_no}"
+    fallback_subject = f"[Thông báo] Nhắc nợ quá hạn thanh toán - Hóa đơn #{request.invoice_no}"
     fallback_body = (
-        f"Kinh gui Quy khach hang {request.customer_name},\n\n"
-        f"Cong ty TNHH Mot thanh vien Minh Software xin tran trong thong bao ve khoan cong no "
-        f"#{request.invoice_no} voi so tien {formatted_amount} VND hien da qua han {request.overdue_days} ngay.\n\n"
-        f"Rat mong Quy cong ty sap xep doi chieu va hoan tat thanh toan som nhat.\n\n"
-        f"Tran trong,\nBo phan Ke toan - Cong ty TNHH Mot thanh vien Minh Software"
+        f"Kính gửi Quý khách hàng {request.customer_name},\n\n"
+        f"Công ty TNHH Một thành viên Minh Software xin trân trọng thông báo về khoản công nợ của hóa đơn số "
+        f"#{request.invoice_no} với số tiền {formatted_amount} VNĐ hiện đã quá hạn thanh toán {request.overdue_days} ngày.\n\n"
+        f"Chúng tôi hiểu rằng việc thanh toán có thể bị chậm trễ do các nguyên nhân khách quan. "
+        f"Rất mong Quý công ty sắp xếp đối chiếu và hoàn tất thanh toán trong thời gian sớm nhất.\n\n"
+        f"Nếu Quý khách hàng đã thực hiện thanh toán trước đó, xin vui lòng bỏ qua thư này hoặc gửi lại phản hồi kèm ủy nhiệm chi để chúng tôi cập nhật hệ thống.\n\n"
+        f"Trân trọng cảm ơn sự hợp tác của Quý công ty,\n"
+        f"Bộ phận Kế toán - Công ty TNHH Một thành viên Minh Software"
     )
     fallback_audit = (
-        f"AI Agent de xuat tao ban nhap email do khoan cong no cua khach hang '{request.customer_name}' "
-        f"vuot moc quy dinh {request.overdue_days} ngay. Can nguoi dung phe duyet truoc khi gui."
+        f"AI Agent tự động đề xuất tạo bản nháp email do khoản công nợ của khách hàng '{request.customer_name}' "
+        f"vượt mốc quy định {request.overdue_days} ngày. Cần người dùng phê duyệt trước khi gửi."
     )
+
+    if not _is_offline_mode():
+        prompt = f"""
+        Bạn là Trợ lý AI Kế toán của {settings.COMPANY_NAME}.
+        Nhiệm vụ của bạn là soạn thảo một BẢN NHÁP EMAIL NHẮC NỢ QUÁ HẠN gửi cho khách hàng.
+
+        THÔNG TIN CÔNG NỢ:
+        - Đơn vị gửi: {settings.COMPANY_NAME}
+        - Khách hàng nợ: {request.customer_name}
+        - Mã hóa đơn: #{request.invoice_no}
+        - Số tiền quá hạn: {formatted_amount} VNĐ
+        - Số ngày quá hạn: {request.overdue_days} ngày
+        - Email người nhận: {recipient}
+
+        YÊU CẦU NỘI DUNG:
+        1. Giọng văn: Lịch sự, trang trọng, chuyên nghiệp nhưng rõ ràng và dứt khoát về nghĩa vụ thanh toán.
+        2. Nêu rõ mã số hóa đơn, số tiền cần thanh toán và số ngày đã quá hạn.
+        3. Đề nghị khách hàng sắp xếp thanh toán hoặc phản hồi nếu đã chuyển tiền.
+        4. Trạng thái hành động luôn là "DRAFT" (bản nháp).
+        5. Cung cấp audit_explanation nêu rõ căn cứ AI Agent đề xuất bản nháp này để phục vụ nhật ký kiểm toán (Audit Log).
+        """
+        cleaned_text = _call_gemini_structured(prompt, ReminderEmailData, temperature=0.3)
+        if cleaned_text:
+            try:
+                data = ReminderEmailData.model_validate_json(cleaned_text)
+                data.action_type = "DRAFT_EMAIL_REMINDER"
+                data.status = "DRAFT"
+                data.recipient_email = recipient
+                return data
+            except Exception as val_err:
+                print(f"[AI Agent] Lỗi parse JSON email từ Gemini: {val_err}")
 
     return ReminderEmailData(
         action_type="DRAFT_EMAIL_REMINDER",
@@ -234,6 +367,7 @@ def generate_reminder_email(request: ReminderEmailRequest) -> ReminderEmailData:
         email_body=fallback_body,
         audit_explanation=fallback_audit,
     )
+
 
 
 def get_mock_chat_response(query: str, business_context: Optional[dict] = None) -> ChatResponseData:
@@ -356,17 +490,69 @@ def get_mock_chat_response(query: str, business_context: Optional[dict] = None) 
 
 def chat_with_assistant(request: ChatRequest) -> ChatResponseData:
     """
-    Tro ly AI hoi dap va tra cuu phap ly doanh nghiep (FR-102->FR-107).
+    Trợ lý AI hỏi đáp và tra cứu pháp lý doanh nghiệp (FR-102 -> FR-107).
+    Cho phép chủ doanh nghiệp nhập câu hỏi và nhận câu trả lời hỗ trợ kèm nguồn tham khảo.
+    Tự động fallback về câu trả lời mẫu khi offline hoặc Gemini API lỗi.
     """
     user_query = (request.message or "").strip()
     if not user_query:
-        raise ValueError("Noi dung tin nhan khong duoc de trong.")
+        raise ValueError("Nội dung tin nhắn câu hỏi không được để trống.")
+
+    if _is_offline_mode():
+        return get_mock_chat_response(user_query, request.business_context)
+
+    history_context = ""
+    if request.history:
+        for msg in request.history[-6:]:
+            role_label = "Chủ doanh nghiệp" if msg.role == "user" else "Trợ lý AI"
+            history_context += f"{role_label}: {msg.content}\n"
+
+    if request.business_context:
+        biz_context_str = (
+            f"\nDỮ LIỆU SỐ LIỆU NỘI BỘ THỰC TẾ CỦA DOANH NGHIỆP TRONG HỆ THỐNG:\n"
+            f"{json.dumps(request.business_context, ensure_ascii=False, indent=2)}\n"
+        )
+    else:
+        biz_context_str = (
+            f"\nDỮ LIỆU SỔ KẾ TOÁN THỰC TẾ HIỆN TẠI CỦA {settings.COMPANY_NAME}:\n"
+            f"- Công nợ quá hạn: Có 1 khoản nợ của 'Công ty CP Công nghệ Đại Việt' cho Hóa đơn #0000001 "
+            f"với số tiền 16.500.000 VNĐ, đã quá hạn 31 ngày (vượt ngưỡng cảnh báo 30 ngày).\n"
+            f"- Nghĩa vụ thuế & BHXH: Đóng BHXH ngày cuối cùng hàng tháng; Thuế GTGT và TNDN tạm tính theo quý "
+            f"hạn chót ngày cuối tháng đầu quý sau; Lệ phí môn bài 2.000.000 VNĐ/năm.\n"
+        )
+
+    prompt = f"""
+    Bạn là Trợ lý AI Kế toán và Pháp lý chuyên nghiệp của Doanh nghiệp một thành viên ({settings.COMPANY_NAME}).
+    Nhiệm vụ của bạn là giải đáp câu hỏi của chủ doanh nghiệp một cách chính xác, ngắn gọn, dễ hiểu và chuyên nghiệp.
+
+    QUY TẮC TƯ VẤN:
+    1. Trả lời câu hỏi nghiệp vụ và thực tế nội bộ:
+       - Khi chủ doanh nghiệp hỏi về tình hình công nợ, khách hàng nợ, hóa đơn quá hạn: Sử dụng số liệu thực tế nội bộ để nêu đích danh tên khách hàng, số hóa đơn, số tiền và số ngày quá hạn, đồng thời đề xuất tạo bản nháp email nhắc nợ.
+       - Khi chủ doanh nghiệp hỏi về thuế, bảo hiểm: Nêu rõ hạn nộp và căn cứ quy định.
+    2. Căn cứ pháp lý (source_reference): Luôn trích dẫn rõ điều khoản, thông tư hoặc nghị định liên quan (FR-106).
+    3. Cảnh báo (disclaimer): Nhắc nhở người dùng nội dung mang tính chất tham khảo trước khi áp dụng chính thức (FR-107).
+
+    {biz_context_str}
+
+    Lịch sử trao đổi trước đó (nếu có):
+    {history_context}
+
+    Câu hỏi của chủ doanh nghiệp:
+    "{user_query}"
+    """
+
+    cleaned_text = _call_gemini_structured(prompt, ChatResponseData, temperature=0.3)
+    if cleaned_text:
+        try:
+            data = ChatResponseData.model_validate_json(cleaned_text)
+            data.interaction_type = "LEGAL_QA"
+            return data
+        except Exception as val_err:
+            print(f"[AI Agent] Lỗi parse JSON chat từ Gemini: {val_err}")
+
     return get_mock_chat_response(user_query, request.business_context)
 
 
-# ============================================================================
-# TÓM TẮT TÌNH HÌNH TÀI CHÍNH TUẦN (BR-AI-07, BR-AI-10)
-# ============================================================================
 
 def get_mock_weekly_summary(request: WeeklySummaryRequest) -> WeeklySummaryResponseData:
     """
@@ -457,6 +643,57 @@ def get_mock_weekly_summary(request: WeeklySummaryRequest) -> WeeklySummaryRespo
 
 def generate_weekly_financial_summary(request: WeeklySummaryRequest) -> WeeklySummaryResponseData:
     """
-    Tóm tắt tình hình tài chính tuần theo BR-AI-07 (chế độ offline rule-based).
+    Gọi Gemini API để đóng vai trò Giám đốc tài chính (Virtual CFO) phân tích và tóm tắt
+    tình hình tài chính tuần, phát hiện rủi ro và đưa ra đề xuất hành động theo BR-AI-07.
+    Tự động fallback về mock rule-based khi offline hoặc Gemini không khả dụng.
     """
+    if _is_offline_mode():
+        return get_mock_weekly_summary(request)
+
+    period = request.period or "Tuần này"
+    revenue = float(request.total_revenue)
+    expense = float(request.total_expense)
+    net_flow = request.net_cashflow if request.net_cashflow is not None else (revenue - expense)
+
+    overdue_info = [
+        f"- Khách hàng: {it.customer_name}, HĐ: {it.invoice_no or 'N/A'}, Số tiền: {it.amount:,.0f} VNĐ, Quá hạn: {it.overdue_days} ngày"
+        for it in (request.overdue_receivables or [])
+    ]
+    overdue_text = "\n".join(overdue_info) if overdue_info else "Không có khoản nợ quá hạn."
+
+    obligation_info = [
+        f"- Nghĩa vụ: {ob.title}, Hạn chót: {ob.deadline}, Số tiền ước tính: {ob.estimated_amount:,.0f} VNĐ"
+        for ob in (request.upcoming_obligations or [])
+    ]
+    obligation_text = "\n".join(obligation_info) if obligation_info else "Không có nghĩa vụ thuế/BHXH sắp đến hạn."
+
+    prompt = f"""
+    Bạn là Giám đốc Tài chính Ảo (Virtual CFO) kiêm Chuyên gia Kế toán của Doanh nghiệp một thành viên ({settings.COMPANY_NAME}).
+    Nhiệm vụ của bạn là tổng hợp và viết Bản Tóm Tắt Tình Hình Tài Chính Tuần (BR-AI-07) gửi cho Chủ Doanh nghiệp.
+
+    DỮ LIỆU SỐ LIỆU TÀI CHÍNH ĐẦU VÀO TRONG {period}:
+    - Tổng Doanh thu trong tuần: {revenue:,.0f} VNĐ
+    - Tổng Chi phí (hóa đơn mua vào): {expense:,.0f} VNĐ
+    - Dòng tiền ròng (Net Cashflow): {net_flow:,.0f} VNĐ
+    - Tình hình công nợ khách hàng quá hạn:
+    {overdue_text}
+    - Các nghĩa vụ thuế & bảo hiểm sắp đến hạn:
+    {obligation_text}
+
+    YÊU CẦU TRẢ VỀ:
+    1. executive_summary: Viết đoạn nhận định ngắn gọn (3-4 câu), nêu bật sức khỏe tài chính, dòng tiền và điểm cần lưu ý nhất.
+    2. key_metrics: Dict gồm total_revenue, total_expense, net_cashflow, profit_margin.
+    3. risks_and_alerts: Mảng các chuỗi cảnh báo cụ thể (nợ quá hạn > 30 ngày, nguy cơ thâm hụt tiền mặt, hạn thuế).
+    4. action_recommendations: Mảng các hành động đề xuất cụ thể (ví dụ: duyệt gửi email nhắc nợ hóa đơn cụ thể, trích quỹ đóng thuế).
+    5. disclaimer: Giữ nguyên câu cảnh báo FR-107.
+    6. audit_explanation: Giải thích tóm tắt logic AI phân tích đề xuất (BR-AI-10).
+    """
+
+    cleaned_text = _call_gemini_structured(prompt, WeeklySummaryResponseData, temperature=0.3)
+    if cleaned_text:
+        try:
+            return WeeklySummaryResponseData.model_validate_json(cleaned_text)
+        except Exception as val_err:
+            print(f"[AI Agent] Lỗi parse JSON weekly summary từ Gemini: {val_err}")
+
     return get_mock_weekly_summary(request)
