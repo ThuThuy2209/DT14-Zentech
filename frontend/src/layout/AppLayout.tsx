@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { MobileTopBar } from '../components/mobile/MobileTopBar';
@@ -34,12 +34,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, onLogout }) => {
   // 1. Khởi tạo activeTab từ URL thực tế trên trình duyệt
   const [activeTab, setActiveTabState] = useState<string>(getInitialTab);
   const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
+  const mainRef = useRef<HTMLElement | null>(null);
 
   // 2. Chuyển tab và đồng bộ trực tiếp lên thanh địa chỉ URL (không reload trang)
   const setActiveTab = useCallback((tab: string) => {
     setActiveTabState(tab);
     if (typeof window !== 'undefined' && window.location.pathname !== `/${tab}`) {
       window.history.pushState({ tab }, '', `/${tab}`);
+    }
+    // Cuộn về đầu trang mỗi khi chuyển tab
+    if (mainRef.current) {
+      mainRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, []);
 
@@ -56,6 +61,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, onLogout }) => {
     const handlePopState = () => {
       const tabFromPath = getInitialTab();
       setActiveTabState(tabFromPath);
+      // Cuộn về đầu trang khi dùng nút Back/Forward
+      if (mainRef.current) {
+        mainRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -91,7 +100,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, onLogout }) => {
         />
 
         {/* Nội dung trang: p-4 trên mobile, p-8 trên desktop, pb-24 trên mobile để tránh che bởi BottomNav */}
-        <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto">
+        <main ref={mainRef} className="flex-1 p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto">
           {children({ activeTab, setActiveTab })}
         </main>
 
