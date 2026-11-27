@@ -19,6 +19,9 @@ export default function App() {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('user');
     localStorage.removeItem('company');
+    if (typeof window !== 'undefined') {
+      window.history.replaceState({}, '', '/');
+    }
     setIsAuthenticated(false);
   };
 

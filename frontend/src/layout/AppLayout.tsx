@@ -1,8 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { MobileTopBar } from '../components/mobile/MobileTopBar';
 import { MobileBottomNav } from '../components/mobile/MobileBottomNav';
+
+const VALID_TABS = [
+  'dashboard',
+  'invoices',
+  'customers',
+  'finance',
+  'tax-calendar',
+  'copilot',
+  'settings',
+  'profile'
+];
+
+// Hàm lấy tab từ URL hiện tại (ví dụ: /invoices -> invoices)
+const getInitialTab = (): string => {
+  if (typeof window === 'undefined') return 'dashboard';
+  const path = window.location.pathname.replace(/^\/+|\/+$/g, '');
+  if (VALID_TABS.includes(path)) {
+    return path;
+  }
+  return 'dashboard';
+};
 
 interface AppLayoutProps {
   children: (props: { activeTab: string; setActiveTab: (tab: string) => void }) => React.ReactNode;
@@ -10,8 +31,38 @@ interface AppLayoutProps {
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  // 1. Khởi tạo activeTab từ URL thực tế trên trình duyệt
+  const [activeTab, setActiveTabState] = useState<string>(getInitialTab);
   const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
+
+  // 2. Chuyển tab và đồng bộ trực tiếp lên thanh địa chỉ URL (không reload trang)
+  const setActiveTab = useCallback((tab: string) => {
+    setActiveTabState(tab);
+    if (typeof window !== 'undefined' && window.location.pathname !== `/${tab}`) {
+      window.history.pushState({ tab }, '', `/${tab}`);
+    }
+  }, []);
+
+  // 3. Đồng bộ URL ban đầu và lắng nghe sự kiện Back/Forward của trình duyệt
+  useEffect(() => {
+    const currentPath = window.location.pathname.replace(/^\/+|\/+$/g, '');
+    
+    // Nếu vào trang chủ "/" hoặc URL chưa có tab hợp lệ, tự động cập nhật URL thành /dashboard
+    if (!VALID_TABS.includes(currentPath)) {
+      window.history.replaceState({ tab: activeTab }, '', `/${activeTab}`);
+    }
+
+    // Xử lý khi người dùng bấm nút Back (<-) hoặc Forward (->) trên trình duyệt
+    const handlePopState = () => {
+      const tabFromPath = getInitialTab();
+      setActiveTabState(tabFromPath);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [activeTab]);
 
   return (
     <div className="flex min-h-screen bg-[#F8FAFC]">
