@@ -6,8 +6,14 @@ from typing import Optional
 # Bắt buộc sử dụng endpoint v1beta cho Gemini API để hỗ trợ generateContent và JSON Schema
 os.environ["GOOGLE_GENAI_API_VERSION"] = "v1beta"
 
-from google import genai
-from google.genai import types
+try:
+    from google import genai
+except ImportError:
+    genai = None
+try:
+    from google.genai import types
+except ImportError:
+    types = None
 from app.core.config import settings
 from app.schemas.invoice import InvoiceExtractSchema, InvoiceItemSchema
 from app.schemas.agent import (
@@ -22,7 +28,7 @@ from app.schemas.agent import (
 _client = None
 
 
-def get_genai_client() -> genai.Client:
+def get_genai_client() -> "genai.Client":
     """
     Khởi tạo lười (lazy load) client Gemini API để tránh crash app khi chưa có API key.
     Chỉ định api_version='v1beta' để hỗ trợ generateContent và Structured JSON Output.
@@ -55,6 +61,49 @@ def clean_json_response(text: str) -> str:
         text = text[:-3]
 
     return text.strip()
+
+
+def _is_offline_mode(allow_mock: bool = False) -> bool:
+    """Kiểm tra xem dịch vụ có đang chạy ở chế độ offline/mock hoặc thiếu Gemini API key hay không."""
+    api_key = settings.GEMINI_API_KEY.strip() or os.environ.get("GEMINI_API_KEY", "").strip()
+    is_mock_enabled = (
+        allow_mock
+        or settings.USE_MOCK_AI
+        or os.environ.get("USE_MOCK_AI", "false").lower() == "true"
+    )
+    return not api_key or is_mock_enabled or genai is None or types is None
+
+
+def _call_gemini_structured(
+    prompt: str,
+    response_schema,
+    temperature: float = 0.2,
+) -> Optional[str]:
+    """Gọi Gemini API với danh sách model dự phòng, trả về chuỗi JSON sạch hoặc None nếu thất bại."""
+    models_to_try = list(
+        dict.fromkeys([settings.DEFAULT_LLM_MODEL, "gemini-2.5-flash"])
+    )
+    try:
+        client = get_genai_client()
+        for model_name in models_to_try:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        response_schema=response_schema,
+                        temperature=temperature,
+                    ),
+                )
+                if response and response.text:
+                    return clean_json_response(response.text)
+            except Exception as api_err:
+                print(f"[AI Agent] Model '{model_name}' báo lỗi: {api_err}")
+                continue
+    except Exception as init_err:
+        print(f"[AI Agent] Không thể khởi tạo Gemini client: {init_err}")
+    return None
 
 
 def parse_invoice_heuristically(raw_text: str) -> Optional[InvoiceExtractSchema]:
@@ -196,25 +245,12 @@ def extract_invoice_structured_data(
     """
     Sử dụng Gemini LLM để bóc tách văn bản thô thành JSON chuẩn hóa đơn
     và định khoản tài khoản kế toán chi phí theo Thông tư 133/2016/TT-BTC.
-    Tự động fallback về Regex Heuristic nếu Gemini API bị quá tải (503) hoặc chưa có API key.
+    Tự động fallback về Regex Heuristic / Mock nếu ở chế độ offline hoặc Gemini API lỗi.
     """
     if not raw_text or not raw_text.strip():
         raise ValueError("Văn bản bóc tách rỗng, không thể phân tích hóa đơn.")
 
-    # Kiểm tra cờ cấu hình USE_MOCK_AI hoặc thiếu API Key
-    api_key = settings.GEMINI_API_KEY.strip() or os.environ.get("GEMINI_API_KEY", "").strip()
-    is_mock_enabled = (
-        allow_mock
-        or settings.USE_MOCK_AI
-        or os.environ.get("USE_MOCK_AI", "false").lower() == "true"
-    )
-
-    if not api_key:
-        print("[AI Agent] GEMINI_API_KEY chưa có. Đang sử dụng bộ bóc tách dự phòng Heuristic...")
-        return get_mock_invoice_data(raw_text)
-
-    if is_mock_enabled:
-        print("[AI Agent] USE_MOCK_AI=true đang kích hoạt. Sử dụng bộ bóc tách dữ liệu chuẩn SRS...")
+    if _is_offline_mode(allow_mock=allow_mock):
         return get_mock_invoice_data(raw_text)
 
     prompt = f"""
@@ -256,63 +292,26 @@ def extract_invoice_structured_data(
     ---
     """
 
-    models_to_try = [
-        settings.DEFAULT_LLM_MODEL,
-        "gemini-3.8-flash",
-    ]
-    models_to_try = list(dict.fromkeys(models_to_try))
+    cleaned_text = _call_gemini_structured(prompt, InvoiceExtractSchema, temperature=0.1)
+    if cleaned_text:
+        try:
+            return InvoiceExtractSchema.model_validate_json(cleaned_text)
+        except Exception as val_err:
+            print(f"[AI Agent] Lỗi parse JSON từ Gemini: {val_err}")
 
-    print(f"\n[AI Agent] === BẮT ĐẦU BÓC TÁCH HÓA ĐƠN ({len(raw_text)} ký tự) ===")
-    last_error = None
-    response = None
+    return get_mock_invoice_data(raw_text)
 
-    try:
-        client = get_genai_client()
-        for model_name in models_to_try:
-            print(f"[AI Agent] Đang thử kết nối model: '{model_name}'...")
-            try:
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                        response_schema=InvoiceExtractSchema,
-                        temperature=0.1,
-                    ),
-                )
-                if response and response.text:
-                    print(f"[AI Agent] >>> THÀNH CÔNG với model: '{model_name}'! <<<\n")
-                    break
-            except Exception as api_err:
-                print(f"[AI Agent] Model '{model_name}' báo lỗi: {api_err}")
-                last_error = api_err
-                continue
-    except Exception as init_err:
-        last_error = init_err
-
-    if not response or not response.text:
-        # Nếu gặp lỗi quá tải 503 hoặc model không khả dụng, kích hoạt fallback thông minh
-        err_msg = str(last_error or "")
-        if "503" in err_msg or "UNAVAILABLE" in err_msg or "404" in err_msg or is_mock_enabled:
-            print(f"[AI Agent] Cảnh báo: Gemini LLM tạm thời không khả dụng ({last_error}). Kích hoạt bộ bóc tách dự phòng Heuristic...")
-            return get_mock_invoice_data(raw_text)
-
-        print(f"[AI Agent] Lỗi: Tất cả các model đều thất bại. Lỗi: {last_error}\n")
-        raise RuntimeError(f"Lỗi khi gọi Gemini API ({models_to_try}): {str(last_error)}")
-
-    cleaned_text = clean_json_response(response.text)
-    return InvoiceExtractSchema.model_validate_json(cleaned_text)
 
 
 def generate_reminder_email(request: ReminderEmailRequest) -> ReminderEmailData:
     """
     Sử dụng Gemini để soạn thảo bản nháp email nhắc nợ quá hạn
     theo nguyên tắc Human-in-the-Loop (giữ trạng thái DRAFT chờ duyệt).
+    Tự động fallback về template chuẩn khi offline hoặc Gemini API lỗi.
     """
     formatted_amount = f"{request.amount:,.0f}".replace(",", ".")
     recipient = request.recipient_email or "accounting@customer.com"
 
-    # Template fallback chất lượng cao khi offline hoặc chưa có API key
     fallback_subject = f"[Thông báo] Nhắc nợ quá hạn thanh toán - Hóa đơn #{request.invoice_no}"
     fallback_body = (
         f"Kính gửi Quý khách hàng {request.customer_name},\n\n"
@@ -329,69 +328,36 @@ def generate_reminder_email(request: ReminderEmailRequest) -> ReminderEmailData:
         f"vượt mốc quy định {request.overdue_days} ngày. Cần người dùng phê duyệt trước khi gửi."
     )
 
-    api_key = settings.GEMINI_API_KEY.strip() or os.environ.get("GEMINI_API_KEY", "").strip()
-    is_mock_enabled = settings.USE_MOCK_AI or os.environ.get("USE_MOCK_AI", "false").lower() == "true"
+    if not _is_offline_mode():
+        prompt = f"""
+        Bạn là Trợ lý AI Kế toán của {settings.COMPANY_NAME}.
+        Nhiệm vụ của bạn là soạn thảo một BẢN NHÁP EMAIL NHẮC NỢ QUÁ HẠN gửi cho khách hàng.
 
-    if not api_key or is_mock_enabled:
-        return ReminderEmailData(
-            action_type="DRAFT_EMAIL_REMINDER",
-            status="DRAFT",
-            recipient_email=recipient,
-            email_subject=fallback_subject,
-            email_body=fallback_body,
-            audit_explanation=fallback_audit,
-        )
+        THÔNG TIN CÔNG NỢ:
+        - Đơn vị gửi: {settings.COMPANY_NAME}
+        - Khách hàng nợ: {request.customer_name}
+        - Mã hóa đơn: #{request.invoice_no}
+        - Số tiền quá hạn: {formatted_amount} VNĐ
+        - Số ngày quá hạn: {request.overdue_days} ngày
+        - Email người nhận: {recipient}
 
-    prompt = f"""
-    Bạn là Trợ lý AI Kế toán của Công ty TNHH Một thành viên Minh Software.
-    Nhiệm vụ của bạn là soạn thảo một BẢN NHÁP EMAIL NHẮC NỢ QUÁ HẠN gửi cho khách hàng.
-
-    THÔNG TIN CÔNG NỢ:
-    - Đơn vị gửi: {settings.COMPANY_NAME}
-    - Khách hàng nợ: {request.customer_name}
-    - Mã hóa đơn: #{request.invoice_no}
-    - Số tiền quá hạn: {formatted_amount} VNĐ
-    - Số ngày quá hạn: {request.overdue_days} ngày
-    - Email người nhận: {recipient}
-
-    YÊU CẦU NỘI DUNG:
-    1. Giọng văn: Lịch sự, trang trọng, chuyên nghiệp nhưng rõ ràng và dứt khoát về nghĩa vụ thanh toán.
-    2. Nêu rõ mã số hóa đơn, số tiền cần thanh toán và số ngày đã quá hạn.
-    3. Đề nghị khách hàng sắp xếp thanh toán hoặc phản hồi nếu đã chuyển tiền.
-    4. Trạng thái hành động luôn là "DRAFT" (bản nháp).
-    5. Cung cấp audit_explanation nêu rõ căn cứ AI Agent đề xuất bản nháp này để phục vụ nhật ký kiểm toán (Audit Log).
-    """
-
-    models_to_try = [
-        settings.DEFAULT_LLM_MODEL,
-        "gemini-3.8-flash",
-    ]
-    models_to_try = list(dict.fromkeys(models_to_try))
-
-    try:
-        client = get_genai_client()
-        for model_name in models_to_try:
+        YÊU CẦU NỘI DUNG:
+        1. Giọng văn: Lịch sự, trang trọng, chuyên nghiệp nhưng rõ ràng và dứt khoát về nghĩa vụ thanh toán.
+        2. Nêu rõ mã số hóa đơn, số tiền cần thanh toán và số ngày đã quá hạn.
+        3. Đề nghị khách hàng sắp xếp thanh toán hoặc phản hồi nếu đã chuyển tiền.
+        4. Trạng thái hành động luôn là "DRAFT" (bản nháp).
+        5. Cung cấp audit_explanation nêu rõ căn cứ AI Agent đề xuất bản nháp này để phục vụ nhật ký kiểm toán (Audit Log).
+        """
+        cleaned_text = _call_gemini_structured(prompt, ReminderEmailData, temperature=0.3)
+        if cleaned_text:
             try:
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                        response_schema=ReminderEmailData,
-                        temperature=0.3,
-                    ),
-                )
-                if response and response.text:
-                    cleaned_text = clean_json_response(response.text)
-                    data = ReminderEmailData.model_validate_json(cleaned_text)
-                    data.action_type = "DRAFT_EMAIL_REMINDER"
-                    data.status = "DRAFT"
-                    data.recipient_email = recipient
-                    return data
-            except Exception:
-                continue
-    except Exception:
-        pass
+                data = ReminderEmailData.model_validate_json(cleaned_text)
+                data.action_type = "DRAFT_EMAIL_REMINDER"
+                data.status = "DRAFT"
+                data.recipient_email = recipient
+                return data
+            except Exception as val_err:
+                print(f"[AI Agent] Lỗi parse JSON email từ Gemini: {val_err}")
 
     return ReminderEmailData(
         action_type="DRAFT_EMAIL_REMINDER",
@@ -401,6 +367,7 @@ def generate_reminder_email(request: ReminderEmailRequest) -> ReminderEmailData:
         email_body=fallback_body,
         audit_explanation=fallback_audit,
     )
+
 
 
 def get_mock_chat_response(query: str, business_context: Optional[dict] = None) -> ChatResponseData:
@@ -525,26 +492,21 @@ def chat_with_assistant(request: ChatRequest) -> ChatResponseData:
     """
     Trợ lý AI hỏi đáp và tra cứu pháp lý doanh nghiệp (FR-102 -> FR-107).
     Cho phép chủ doanh nghiệp nhập câu hỏi và nhận câu trả lời hỗ trợ kèm nguồn tham khảo.
+    Tự động fallback về câu trả lời mẫu khi offline hoặc Gemini API lỗi.
     """
     user_query = (request.message or "").strip()
     if not user_query:
         raise ValueError("Nội dung tin nhắn câu hỏi không được để trống.")
 
-    api_key = settings.GEMINI_API_KEY.strip() or os.environ.get("GEMINI_API_KEY", "").strip()
-    is_mock_enabled = settings.USE_MOCK_AI or os.environ.get("USE_MOCK_AI", "false").lower() == "true"
-
-    if not api_key or is_mock_enabled:
+    if _is_offline_mode():
         return get_mock_chat_response(user_query, request.business_context)
 
-    # Xây dựng ngữ cảnh hội thoại từ lịch sử tin nhắn
     history_context = ""
     if request.history:
-        for msg in request.history[-6:]:  # Lấy tối đa 6 tin nhắn gần nhất
+        for msg in request.history[-6:]:
             role_label = "Chủ doanh nghiệp" if msg.role == "user" else "Trợ lý AI"
             history_context += f"{role_label}: {msg.content}\n"
 
-    # Nạp dữ liệu nội bộ thực tế từ hệ thống (nếu Backend truyền sang)
-    biz_context_str = ""
     if request.business_context:
         biz_context_str = (
             f"\nDỮ LIỆU SỐ LIỆU NỘI BỘ THỰC TẾ CỦA DOANH NGHIỆP TRONG HỆ THỐNG:\n"
@@ -579,43 +541,18 @@ def chat_with_assistant(request: ChatRequest) -> ChatResponseData:
     "{user_query}"
     """
 
+    cleaned_text = _call_gemini_structured(prompt, ChatResponseData, temperature=0.3)
+    if cleaned_text:
+        try:
+            data = ChatResponseData.model_validate_json(cleaned_text)
+            data.interaction_type = "LEGAL_QA"
+            return data
+        except Exception as val_err:
+            print(f"[AI Agent] Lỗi parse JSON chat từ Gemini: {val_err}")
 
-    models_to_try = [
-        settings.DEFAULT_LLM_MODEL,
-        "gemini-3.8-flash",
-    ]
-    models_to_try = list(dict.fromkeys(models_to_try))
-
-    try:
-        client = get_genai_client()
-        for model_name in models_to_try:
-            try:
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                        response_schema=ChatResponseData,
-                        temperature=0.3,
-                    ),
-                )
-                if response and response.text:
-                    cleaned_text = clean_json_response(response.text)
-                    data = ChatResponseData.model_validate_json(cleaned_text)
-                    data.interaction_type = "LEGAL_QA"
-                    return data
-            except Exception:
-                continue
-    except Exception:
-        pass
-
-    # Nếu gọi Gemini thất bại do mạng hoặc quá tải -> kích hoạt phản hồi dự phòng
     return get_mock_chat_response(user_query, request.business_context)
 
 
-# ============================================================================
-# TÓM TẮT TÌNH HÌNH TÀI CHÍNH TUẦN (BR-AI-07, BR-AI-10)
-# ============================================================================
 
 def get_mock_weekly_summary(request: WeeklySummaryRequest) -> WeeklySummaryResponseData:
     """
@@ -708,9 +645,9 @@ def generate_weekly_financial_summary(request: WeeklySummaryRequest) -> WeeklySu
     """
     Gọi Gemini API để đóng vai trò Giám đốc tài chính (Virtual CFO) phân tích và tóm tắt
     tình hình tài chính tuần, phát hiện rủi ro và đưa ra đề xuất hành động theo BR-AI-07.
-    Tự động fallback về mock rule-based nếu Gemini không khả dụng.
+    Tự động fallback về mock rule-based khi offline hoặc Gemini không khả dụng.
     """
-    if getattr(settings, "AI_USE_MOCK", False):
+    if _is_offline_mode():
         return get_mock_weekly_summary(request)
 
     period = request.period or "Tuần này"
@@ -718,18 +655,16 @@ def generate_weekly_financial_summary(request: WeeklySummaryRequest) -> WeeklySu
     expense = float(request.total_expense)
     net_flow = request.net_cashflow if request.net_cashflow is not None else (revenue - expense)
 
-    overdue_info = []
-    for it in (request.overdue_receivables or []):
-        overdue_info.append(
-            f"- Khách hàng: {it.customer_name}, HĐ: {it.invoice_no or 'N/A'}, Số tiền: {it.amount:,.0f} VNĐ, Quá hạn: {it.overdue_days} ngày"
-        )
+    overdue_info = [
+        f"- Khách hàng: {it.customer_name}, HĐ: {it.invoice_no or 'N/A'}, Số tiền: {it.amount:,.0f} VNĐ, Quá hạn: {it.overdue_days} ngày"
+        for it in (request.overdue_receivables or [])
+    ]
     overdue_text = "\n".join(overdue_info) if overdue_info else "Không có khoản nợ quá hạn."
 
-    obligation_info = []
-    for ob in (request.upcoming_obligations or []):
-        obligation_info.append(
-            f"- Nghĩa vụ: {ob.title}, Hạn chót: {ob.deadline}, Số tiền ước tính: {ob.estimated_amount:,.0f} VNĐ"
-        )
+    obligation_info = [
+        f"- Nghĩa vụ: {ob.title}, Hạn chót: {ob.deadline}, Số tiền ước tính: {ob.estimated_amount:,.0f} VNĐ"
+        for ob in (request.upcoming_obligations or [])
+    ]
     obligation_text = "\n".join(obligation_info) if obligation_info else "Không có nghĩa vụ thuế/BHXH sắp đến hạn."
 
     prompt = f"""
@@ -754,34 +689,11 @@ def generate_weekly_financial_summary(request: WeeklySummaryRequest) -> WeeklySu
     6. audit_explanation: Giải thích tóm tắt logic AI phân tích đề xuất (BR-AI-10).
     """
 
-    models_to_try = [
-        settings.DEFAULT_LLM_MODEL,
-        "gemini-3.8-flash",
-    ]
-    models_to_try = list(dict.fromkeys(models_to_try))
-
-    try:
-        client = get_genai_client()
-        for model_name in models_to_try:
-            try:
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                        response_schema=WeeklySummaryResponseData,
-                        temperature=0.3,
-                    ),
-                )
-                if response and response.text:
-                    cleaned_text = clean_json_response(response.text)
-                    data = WeeklySummaryResponseData.model_validate_json(cleaned_text)
-                    return data
-            except Exception:
-                continue
-    except Exception:
-        pass
+    cleaned_text = _call_gemini_structured(prompt, WeeklySummaryResponseData, temperature=0.3)
+    if cleaned_text:
+        try:
+            return WeeklySummaryResponseData.model_validate_json(cleaned_text)
+        except Exception as val_err:
+            print(f"[AI Agent] Lỗi parse JSON weekly summary từ Gemini: {val_err}")
 
     return get_mock_weekly_summary(request)
-
-
