@@ -90,19 +90,10 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
 
                     {/* Thông báo lỗi nếu đăng nhập thất bại */}
           {errorMessage && (
-            <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-700">
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              <div className="flex-1 leading-relaxed">
-                <div>{errorMessage}</div>
-                
-                {/* Nút cứu cánh cho Frontend Dev khi BE/Database của bạn khác chưa sẵn sàng */}
-                <button
-                  type="button"
-                  onClick={() => onLoginSuccess && onLoginSuccess()}
-                  className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold rounded-lg transition-colors cursor-pointer"
-                >
-                  👉 Bấm vào đây để vào thẳng Dashboard (Chế độ Demo Frontend)
-                </button>
+            <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2.5 text-xs text-rose-700 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <div className="flex-1 font-medium">
+                {errorMessage}
               </div>
             </div>
           )}
