@@ -291,7 +291,7 @@ export const Header: React.FC<HeaderProps> = ({ onUploadInvoiceClick, onNavigate
   };
 
   return (
-    <header className="h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-20 px-8 flex items-center justify-between">
+    <header className="hidden md:flex h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-20 px-8 items-center justify-between">
       {/* 1. Ô tìm kiếm đa năng (Spotlight Search) */}
       <div className="relative w-96" ref={searchRef}>
         <div className="relative flex items-center">

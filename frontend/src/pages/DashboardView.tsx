@@ -20,6 +20,7 @@ import { getBankAccounts, getExpenseStatistics, type BankAccountItem, type Expen
 import { getPurchaseInvoices, type PurchaseInvoiceItem } from '../services/invoiceService';
 import { getContracts } from '../services/contractService';
 import { getCustomers } from '../services/customerService';
+import { MobileDashboardView } from './MobileDashboardView';
 
 interface DashboardViewProps {
   onNavigate?: (tab: string) => void;
@@ -104,7 +105,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
   }, [fetchDashboardData]);
 
   return (
-    <div className="space-y-6">
+    <>
+      {/* 1. GIAO DIỆN MOBILE DASHBOARD (Tự động hiển thị trên điện thoại / màn hình < 768px) */}
+      <div className="block md:hidden">
+        <MobileDashboardView onNavigate={onNavigate} />
+      </div>
+
+      {/* 2. GIAO DIỆN DESKTOP DASHBOARD (Hiển thị trên máy tính / màn hình >= 768px) */}
+      <div className="hidden md:block space-y-6">
       {/* 1. Header chào buổi sáng & Bộ lọc thời gian */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -752,5 +760,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
         </div>
       </div>
     </div>
+    </>
   );
 };

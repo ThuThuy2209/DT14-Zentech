@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { MobileTopBar } from '../components/mobile/MobileTopBar';
+import { MobileBottomNav } from '../components/mobile/MobileBottomNav';
 
 interface AppLayoutProps {
   children: (props: { activeTab: string; setActiveTab: (tab: string) => void }) => React.ReactNode;
@@ -12,7 +14,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   return (
     <div className="flex min-h-screen bg-[#F8FAFC]">
-      {/* Thanh Menu Trái */}
+      {/* Thanh Menu Trái (Chỉ hiện trên Desktop) */}
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
@@ -21,13 +23,32 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
       {/* Vùng nội dung chính */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* TopBar cho Mobile */}
+        <div className="md:hidden">
+          <MobileTopBar 
+            onOpenProfile={() => setActiveTab('profile')}
+            onNavigate={setActiveTab}
+          />
+        </div>
+
+        {/* Header cho Desktop */}
         <Header 
           onUploadInvoiceClick={() => setActiveTab('invoices')} 
           onNavigate={setActiveTab}
         />
-        <main className="flex-1 p-8 overflow-y-auto">
+
+        {/* Nội dung trang: p-4 trên mobile, p-8 trên desktop, pb-24 trên mobile để tránh che bởi BottomNav */}
+        <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto">
           {children({ activeTab, setActiveTab })}
         </main>
+
+        {/* Bottom Navigation Bar (Chỉ hiện trên Mobile) */}
+        <div className="md:hidden">
+          <MobileBottomNav 
+            activeTab={activeTab} 
+            setActiveTab={setActiveTab} 
+          />
+        </div>
       </div>
 
       {/* Modal xem Hồ sơ cá nhân Anh Minh (Theo đúng yêu cầu của Đạt) */}

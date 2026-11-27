@@ -29,7 +29,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onOpe
   ];
 
   return (
-    <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between h-screen sticky top-0 z-30 select-none">
+    <aside className="hidden md:flex w-64 bg-white border-r border-slate-200 flex-col justify-between h-screen sticky top-0 z-30 select-none">
       {/* 1. Logo Thương hiệu OPC SmartOffice */}
       <div>
         <div className="p-5 flex items-center gap-3 border-b border-slate-100">
