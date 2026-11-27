@@ -171,9 +171,116 @@ export async function getBankTransactions(params?: {
 }
 
 // POST /api/v1/bank-statements/upload
-export async function uploadBankStatement(file: File, bankAccountId: number): Promise<ApiResponse<BankStatementUploadResponse>> {
+export async function uploadBankStatement(file: File, accountId: number | string): Promise<ApiResponse<BankStatementUploadResponse>> {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('bankAccountId', bankAccountId.toString());
+  formData.append('accountId', accountId.toString());
   return upload<BankStatementUploadResponse>('/bank-statements/upload', formData);
+}
+
+// ==========================================
+// 6. Interfaces Bank Statements
+// ==========================================
+export interface BankStatementItem {
+  id: number;
+  bankAccountId: number;
+  fileName: string;
+  uploadedAt: string;
+  totalTransactions: number;
+  status: string;
+}
+
+// ==========================================
+// 7. Interfaces Bank Reconciliations
+// ==========================================
+export interface ReconciliationItem {
+  id: number;
+  transactionId: number;
+  documentId?: number | null;
+  contractId?: number | null;
+  matchedAmount: number;
+  status: 'CONFIRMED' | 'PENDING' | 'CANCELLED' | string;
+  confirmedAt?: string | null;
+  note?: string | null;
+  transaction?: BankTransactionItem;
+}
+
+export interface AutoMatchSuggestion {
+  transactionId: number;
+  transactionAmount: number;
+  transactionDate: string;
+  transactionDescription: string;
+  suggestions: {
+    documentId?: number;
+    contractId?: number;
+    matchScore: number;
+    description: string;
+    amount: number;
+  }[];
+}
+
+export interface ConfirmReconciliationPayload {
+  transactionId: number;
+  documentId?: number;
+  contractId?: number;
+  matchedAmount: number;
+  note?: string;
+}
+
+// ==========================================
+// 8. API FUNCTIONS: Bank Statements
+// ==========================================
+
+// GET /api/v1/bank-statements
+export async function getBankStatements(): Promise<ApiResponse<{ items: BankStatementItem[]; total: number }>> {
+  return get<{ items: BankStatementItem[]; total: number }>('/bank-statements');
+}
+
+// GET /api/v1/bank-statements/:id
+export async function getBankStatementById(id: number): Promise<ApiResponse<BankStatementItem>> {
+  return get<BankStatementItem>(`/bank-statements/${id}`);
+}
+
+// DELETE /api/v1/bank-statements/:id
+export async function deleteBankStatement(id: number): Promise<ApiResponse<{ message: string }>> {
+  return del<{ message: string }>(`/bank-statements/${id}`);
+}
+
+// ==========================================
+// 9. API FUNCTIONS: Bank Reconciliations
+// ==========================================
+
+// GET /api/v1/bank-reconciliations/auto-match
+export async function getAutoMatch(): Promise<ApiResponse<AutoMatchSuggestion[]>> {
+  return get<AutoMatchSuggestion[]>('/bank-reconciliations/auto-match');
+}
+
+// GET /api/v1/bank-reconciliations/suggest/:transactionId
+export async function getSuggestMatch(transactionId: number): Promise<ApiResponse<AutoMatchSuggestion>> {
+  return get<AutoMatchSuggestion>(`/bank-reconciliations/suggest/${transactionId}`);
+}
+
+// POST /api/v1/bank-reconciliations/confirm
+export async function confirmReconciliation(payload: ConfirmReconciliationPayload): Promise<ApiResponse<ReconciliationItem>> {
+  return post<ReconciliationItem>('/bank-reconciliations/confirm', payload);
+}
+
+// DELETE /api/v1/bank-reconciliations/:id
+export async function deleteReconciliation(id: number): Promise<ApiResponse<{ message: string }>> {
+  return del<{ message: string }>(`/bank-reconciliations/${id}`);
+}
+
+// GET /api/v1/bank-reconciliations
+export async function getReconciliationHistory(params?: {
+  page?: number;
+  limit?: number;
+  status?: string;
+}): Promise<ApiResponse<{ items: ReconciliationItem[]; total: number }>> {
+  const query = new URLSearchParams();
+  if (params?.page) query.append('page', params.page.toString());
+  if (params?.limit) query.append('limit', params.limit.toString());
+  if (params?.status) query.append('status', params.status);
+  const queryString = query.toString();
+  const endpoint = queryString ? `/bank-reconciliations?${queryString}` : '/bank-reconciliations';
+  return get<{ items: ReconciliationItem[]; total: number }>(endpoint);
 }

@@ -1,0 +1,9 @@
+/* src/components/dashboard/DashboardContent.css */
+.dashboard-kpi-card {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-kpi-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px -6px rgba(15, 23, 42, 0.08);
+}

@@ -34,11 +34,21 @@ import {
   deleteExpense,
   getBankAccounts,
   getBankTransactions,
+  uploadBankStatement,
+  getBankStatements,
+  deleteBankStatement,
+  getReconciliationHistory,
+  confirmReconciliation,
+  deleteReconciliation,
+  getAutoMatch,
   type ExpenseItem,
   type ExpenseStatistics,
   type CreateExpensePayload,
   type BankAccountItem,
-  type BankTransactionItem
+  type BankTransactionItem,
+  type BankStatementItem,
+  type ReconciliationItem,
+  type AutoMatchSuggestion
 } from '../services/financeService';
 
 interface DebtRecord {
@@ -173,6 +183,9 @@ export const FinanceView: React.FC = () => {
   const [newPayment, setNewPayment] = useState<{ amount: string; method: 'bank_transfer' | 'cash' | 'other'; referenceNo: string; note: string }>({
     amount: '', method: 'bank_transfer', referenceNo: '', note: ''
   });
+  const [isLoadingReconcile, setIsLoadingReconcile] = useState<boolean>(false);
+  const [autoMatchSuggestions, setAutoMatchSuggestions] = useState<AutoMatchSuggestion[]>([]);
+  const [apiReconcileItems, setApiReconcileItems] = useState<ReconciliationItem[]>([]);
 
   const [reconcileRecords, setReconcileRecords] = useState<ReconcileRecord[]>([
     {
@@ -276,7 +289,7 @@ export const FinanceView: React.FC = () => {
     return matchSearch && matchFilter;
   });
 
-  const handleAddPayment = () => {
+  const handleAddPayment = async () => {
     if (!selectedReconcile || !newPayment.amount || Number(newPayment.amount) <= 0) return;
     const paidSoFar = getPaidTotal(selectedReconcile) + Number(newPayment.amount);
     const newStatus: ReconcileRecord['status'] =
@@ -284,6 +297,30 @@ export const FinanceView: React.FC = () => {
       : paidSoFar > 0 ? 'partial'
       : 'unpaid';
 
+    // Lấy transactionId từ record nếu có (gắn từ API), mặc định 0 nếu là mock
+    const transactionId = Number(selectedReconcile.id.replace('R', '')) || 0;
+
+    // Gọi API confirm nếu có transactionId hợp lệ
+    if (transactionId > 0) {
+      try {
+        const res = await confirmReconciliation({
+          transactionId,
+          matchedAmount: Number(newPayment.amount),
+          note: newPayment.note || `${newPayment.method} - ${newPayment.referenceNo}`,
+        });
+        if (!res.success) {
+          setApiNotice({ type: 'error', message: res.message || 'Xác nhận đối chiếu thất bại' });
+          return;
+        }
+        // Reload danh sách sau khi confirm
+        fetchReconcileData();
+      } catch {
+        setApiNotice({ type: 'error', message: 'Lỗi kết nối khi xác nhận đối chiếu!' });
+        return;
+      }
+    }
+
+    // Cập nhật local state để UI phản hồi ngay
     const updatedRecord: ReconcileRecord = {
       ...selectedReconcile,
       status: newStatus,
@@ -305,7 +342,25 @@ export const FinanceView: React.FC = () => {
     setApiNotice({ type: 'success', message: `Ghi nhận thanh toán ${Number(newPayment.amount).toLocaleString('vi-VN')} đ từ ${selectedReconcile.companyName} thành công!` });
   };
 
-  const handleToggleVerify = (recordId: string, paymentId: string) => {
+  const handleToggleVerify = async (recordId: string, paymentId: string) => {
+    // Tìm payment trong record
+    const record = reconcileRecords.find(r => r.id === recordId);
+    const payment = record?.payments.find(p => p.id === paymentId);
+
+    // Nếu payment đang verified → hủy đối chiếu (gọi deleteReconciliation)
+    if (payment?.verified) {
+      const reconcileId = Number(paymentId.replace('P', ''));
+      if (reconcileId > 0) {
+        try {
+          await deleteReconciliation(reconcileId);
+          fetchReconcileData();
+        } catch {
+          // Tiếp tục toggle local nếu API không phản hồi
+        }
+      }
+    }
+
+    // Cập nhật local state
     setReconcileRecords(prev => prev.map(r => {
       if (r.id !== recordId) return r;
       return { ...r, payments: r.payments.map(p => p.id === paymentId ? { ...p, verified: !p.verified } : p) };
@@ -346,7 +401,12 @@ export const FinanceView: React.FC = () => {
   // ================= State Ngân hàng (Bank Accounts & Transactions) =================
   const [bankAccounts, setBankAccounts] = useState<BankAccountItem[]>([]);
   const [transactions, setTransactions] = useState<BankTransactionItem[]>([]);
+  const [bankStatements, setBankStatements] = useState<BankStatementItem[]>([]);
   const [isLoadingBank, setIsLoadingBank] = useState<boolean>(false);
+  const [showUploadModal, setShowUploadModal] = useState<boolean>(false);
+  const [uploadAccountId, setUploadAccountId] = useState<string>('');
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [isUploadingStatement, setIsUploadingStatement] = useState<boolean>(false);
 
   // ================= Tải dữ liệu API =================
   const fetchExpensesData = useCallback(async () => {
@@ -376,16 +436,24 @@ export const FinanceView: React.FC = () => {
   const fetchBankData = useCallback(async () => {
     setIsLoadingBank(true);
     try {
-      const [accRes, transRes] = await Promise.all([
+      const [accRes, transRes, stmtRes] = await Promise.all([
         getBankAccounts(),
-        getBankTransactions({ page: 1, limit: 10 }),
+        getBankTransactions({ page: 1, limit: 20 }),
+        getBankStatements(),
       ]);
 
       if (accRes.success && accRes.data) {
-        setBankAccounts(accRes.data.items || []);
+        const items = accRes.data.items || [];
+        setBankAccounts(items);
+        if (items.length > 0 && !uploadAccountId) {
+          setUploadAccountId(items[0].id.toString());
+        }
       }
       if (transRes.success && transRes.data) {
         setTransactions(transRes.data.items || []);
+      }
+      if (stmtRes.success && stmtRes.data) {
+        setBankStatements(stmtRes.data.items || []);
       }
     } catch {
       setApiNotice({
@@ -395,12 +463,114 @@ export const FinanceView: React.FC = () => {
     } finally {
       setIsLoadingBank(false);
     }
+  }, [uploadAccountId]);
+
+  const handleUploadStatementSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!uploadFile || !uploadAccountId) {
+      setApiNotice({ type: 'error', message: 'Vui lòng chọn tài khoản ngân hàng và file sao kê!' });
+      return;
+    }
+    setIsUploadingStatement(true);
+    try {
+      const res = await uploadBankStatement(uploadFile, uploadAccountId);
+      if (res.success) {
+        setApiNotice({
+          type: 'success',
+          message: res.data?.message || 'Tải lên file sao kê thành công! Hệ thống đã bóc tách giao dịch.',
+        });
+        setShowUploadModal(false);
+        setUploadFile(null);
+        fetchBankData();
+      } else {
+        setApiNotice({ type: 'error', message: res.message || 'Tải lên sao kê thất bại' });
+      }
+    } catch {
+      setApiNotice({ type: 'error', message: 'Lỗi kết nối khi tải lên file sao kê!' });
+    } finally {
+      setIsUploadingStatement(false);
+    }
+  };
+
+  const handleDeleteStatement = async (id: number) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa đợt sao kê này?')) return;
+    try {
+      const res = await deleteBankStatement(id);
+      if (res.success) {
+        setApiNotice({ type: 'success', message: 'Đã xóa đợt sao kê!' });
+        fetchBankData();
+      } else {
+        setApiNotice({ type: 'error', message: res.message || 'Xóa sao kê thất bại' });
+      }
+    } catch {
+      setApiNotice({ type: 'error', message: 'Lỗi kết nối khi xóa sao kê!' });
+    }
+  };
+
+  const handleConfirmAutoMatch = async (
+    transactionId: number,
+    suggestion: AutoMatchSuggestion['suggestions'][number]
+  ) => {
+    try {
+      const res = await confirmReconciliation({
+        transactionId,
+        documentId: suggestion.documentId,
+        contractId: suggestion.contractId,
+        matchedAmount: suggestion.amount,
+        note: `Đối chiếu tự động: ${suggestion.description}`,
+      });
+      if (res.success) {
+        setApiNotice({ type: 'success', message: 'Đã xác nhận đối chiếu và gạch nợ thành công!' });
+        fetchReconcileData();
+      } else {
+        setApiNotice({ type: 'error', message: res.message || 'Xác nhận đối chiếu thất bại' });
+      }
+    } catch {
+      setApiNotice({ type: 'error', message: 'Lỗi kết nối khi xác nhận đối chiếu!' });
+    }
+  };
+
+  const handleRollbackReconciliation = async (id: number) => {
+    if (!window.confirm('Bạn có muốn hủy kết quả đối chiếu này (rollback)?')) return;
+    try {
+      const res = await deleteReconciliation(id);
+      if (res.success) {
+        setApiNotice({ type: 'success', message: 'Đã hủy kết quả đối chiếu thành công!' });
+        fetchReconcileData();
+      } else {
+        setApiNotice({ type: 'error', message: res.message || 'Hủy đối chiếu thất bại' });
+      }
+    } catch {
+      setApiNotice({ type: 'error', message: 'Lỗi kết nối khi hủy đối chiếu!' });
+    }
+  };
+
+  const fetchReconcileData = useCallback(async () => {
+    setIsLoadingReconcile(true);
+    try {
+      const [histRes, autoRes] = await Promise.all([
+        getReconciliationHistory({ page: 1, limit: 50 }),
+        getAutoMatch(),
+      ]);
+      if (histRes.success && histRes.data) {
+        setApiReconcileItems(histRes.data.items || []);
+      }
+      if (autoRes.success && autoRes.data) {
+        setAutoMatchSuggestions(autoRes.data || []);
+      }
+    } catch {
+      // Nếu API lỗi, giữ nguyên dữ liệu mock trong reconcileRecords
+      setApiNotice({ type: 'error', message: 'Không thể tải lịch sử đối chiếu từ Backend' });
+    } finally {
+      setIsLoadingReconcile(false);
+    }
   }, []);
 
   useEffect(() => {
     if (mainTab === 'expenses') fetchExpensesData();
     if (mainTab === 'bank') fetchBankData();
-  }, [mainTab, fetchExpensesData, fetchBankData]);
+    if (mainTab === 'reconcile') fetchReconcileData();
+  }, [mainTab, fetchExpensesData, fetchBankData, fetchReconcileData]);
 
   // Tạo khoản chi phí mới
   const handleCreateExpenseSubmit = async (e: React.FormEvent) => {
@@ -794,8 +964,81 @@ export const FinanceView: React.FC = () => {
                   <Download className="w-3.5 h-3.5" />
                   <span>Xuất Biên bản</span>
                 </button>
+                <button
+                  onClick={() => fetchReconcileData()}
+                  disabled={isLoadingReconcile}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingReconcile ? 'animate-spin' : ''}`} />
+                  <span>{isLoadingReconcile ? 'Đang tải...' : 'Làm mới'}</span>
+                </button>
               </div>
             </div>
+
+            {/* Auto-match suggestions chi tiết */}
+            {autoMatchSuggestions.length > 0 && (
+              <div className="mt-3 p-4 bg-blue-50/70 border border-blue-200 rounded-xl space-y-2.5">
+                <div className="flex items-center gap-2 text-xs">
+                  <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span className="font-bold text-blue-900">
+                    Đề xuất đối chiếu tự động ({autoMatchSuggestions.length} giao dịch)
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {autoMatchSuggestions.map((item) => (
+                    <div key={item.transactionId} className="bg-white p-3 rounded-lg border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                      <div>
+                        <p className="font-bold text-slate-800">
+                          GD #{item.transactionId} • {item.transactionAmount.toLocaleString('vi-VN')} đ
+                        </p>
+                        <p className="text-[11px] text-slate-500">{item.transactionDescription}</p>
+                        {item.suggestions?.[0] && (
+                          <p className="text-[11px] text-blue-700 font-medium mt-0.5">
+                            Gợi ý: {item.suggestions[0].description} (Khớp {item.suggestions[0].matchScore}%)
+                          </p>
+                        )}
+                      </div>
+                      {item.suggestions?.[0] && (
+                        <button
+                          onClick={() => handleConfirmAutoMatch(item.transactionId, item.suggestions[0])}
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold rounded-lg transition-colors shrink-0 cursor-pointer"
+                        >
+                          Xác nhận gạch nợ
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* API reconciliation history */}
+            {apiReconcileItems.length > 0 && (
+              <div className="mt-3 p-4 bg-emerald-50/60 border border-emerald-200 rounded-xl space-y-2">
+                <div className="flex items-center gap-2 text-xs text-emerald-800 font-bold">
+                  <CheckCheck className="w-4 h-4 shrink-0" />
+                  <span>Lịch sử đối chiếu đã ghi nhận trên hệ thống ({apiReconcileItems.length})</span>
+                </div>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {apiReconcileItems.map((rec) => (
+                    <div key={rec.id} className="bg-white p-2.5 rounded-lg border border-emerald-100 flex items-center justify-between gap-2 text-xs">
+                      <div>
+                        <span className="font-bold text-slate-800">#{rec.id} (GD #{rec.transactionId})</span>
+                        <span className="mx-2 text-slate-300">|</span>
+                        <span className="font-bold text-emerald-700">{rec.matchedAmount.toLocaleString('vi-VN')} đ</span>
+                        {rec.note && <span className="text-slate-500 ml-2">• {rec.note}</span>}
+                      </div>
+                      <button
+                        onClick={() => handleRollbackReconciliation(rec.id)}
+                        className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 text-[11px] font-bold rounded-lg transition-colors shrink-0 cursor-pointer"
+                      >
+                        Hủy đối chiếu
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* 4 chỉ số tóm tắt cuối tháng */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -1305,8 +1548,8 @@ export const FinanceView: React.FC = () => {
                 <p className="text-xs text-slate-500">Đối chiếu sao kê với hóa đơn bán ra / mua vào</p>
               </div>
               <button 
-                onClick={() => alert('Vui lòng chọn file sao kê ngân hàng (.xlsx / .csv)')}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold hover:bg-blue-100"
+                onClick={() => setShowUploadModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors cursor-pointer"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5" />
                 <span>Tải lên sao kê</span>
@@ -1357,6 +1600,129 @@ export const FinanceView: React.FC = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* Danh sách đợt sao kê đã tải lên */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Lịch sử tệp sao kê đã tải lên</h3>
+                <p className="text-xs text-slate-500">Quản lý các đợt import file Excel/CSV ngân hàng</p>
+              </div>
+              <span className="text-xs font-bold text-slate-500">{bankStatements.length} đợt</span>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {bankStatements.length === 0 ? (
+                <div className="p-6 text-center text-xs text-slate-400">
+                  Chưa có tệp sao kê nào được tải lên.
+                </div>
+              ) : (
+                bankStatements.map((stmt) => (
+                  <div key={stmt.id} className="p-4 flex items-center justify-between gap-3 hover:bg-slate-50/70 text-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <FileSpreadsheet className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-800">{stmt.fileName}</p>
+                        <p className="text-[11px] text-slate-500">
+                          TK #{stmt.bankAccountId} • {stmt.totalTransactions} giao dịch • {new Date(stmt.uploadedAt).toLocaleString('vi-VN')}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-bold">
+                        {stmt.status}
+                      </span>
+                      <button
+                        onClick={() => handleDeleteStatement(stmt.id)}
+                        className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-colors"
+                        title="Xóa đợt sao kê"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL UPLOAD FILE SAO KÊ (.XLSX / .CSV) ================= */}
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <FileSpreadsheet className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900">Tải lên File Sao kê Ngân hàng</h3>
+                  <p className="text-xs text-slate-400">Hỗ trợ định dạng .xlsx, .xls, .csv</p>
+                </div>
+              </div>
+              <button onClick={() => setShowUploadModal(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUploadStatementSubmit} className="pt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Chọn Tài khoản Ngân hàng <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={uploadAccountId}
+                  onChange={(e) => setUploadAccountId(e.target.value)}
+                  required
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                >
+                  {bankAccounts.length === 0 ? (
+                    <option value="1">Tài khoản mặc định (#1)</option>
+                  ) : (
+                    bankAccounts.map((acc) => (
+                      <option key={acc.id} value={acc.id}>
+                        {acc.bankName} - {acc.accountNumber} ({acc.accountHolder})
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Tệp sao kê (.xlsx, .xls, .csv) <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  required
+                  onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowUploadModal(false)}
+                  className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUploadingStatement || !uploadFile}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-sm flex items-center gap-1.5"
+                >
+                  {isUploadingStatement && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{isUploadingStatement ? 'Đang tải lên...' : 'Tải lên & Bóc tách'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

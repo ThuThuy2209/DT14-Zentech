@@ -1,0 +1,4 @@
+/* src/components/layout/Header/Header.css */
+.layout-header {
+  backdrop-filter: blur(8px);
+}

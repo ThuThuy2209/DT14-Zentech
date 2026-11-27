@@ -1,0 +1,5 @@
+/* src/components/layout/AppLayout/AppLayout.css */
+.app-layout-shell {
+  min-height: 100vh;
+  background-color: #f8fafc;
+}

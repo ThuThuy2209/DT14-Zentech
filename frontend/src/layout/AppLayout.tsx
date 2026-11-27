@@ -3,23 +3,13 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { MobileTopBar } from '../components/mobile/MobileTopBar';
 import { MobileBottomNav } from '../components/mobile/MobileBottomNav';
-
-const VALID_TABS = [
-  'dashboard',
-  'invoices',
-  'customers',
-  'finance',
-  'tax-calendar',
-  'copilot',
-  'settings',
-  'profile'
-];
+import { VALID_TABS } from '../routes/routeConfig';
 
 // Hàm lấy tab từ URL hiện tại (ví dụ: /invoices -> invoices)
 const getInitialTab = (): string => {
   if (typeof window === 'undefined') return 'dashboard';
   const path = window.location.pathname.replace(/^\/+|\/+$/g, '');
-  if (VALID_TABS.includes(path)) {
+  if ((VALID_TABS as readonly string[]).includes(path)) {
     return path;
   }
   return 'dashboard';
@@ -53,7 +43,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, onLogout }) => {
     const currentPath = window.location.pathname.replace(/^\/+|\/+$/g, '');
     
     // Nếu vào trang chủ "/" hoặc URL chưa có tab hợp lệ, tự động cập nhật URL thành /dashboard
-    if (!VALID_TABS.includes(currentPath)) {
+    if (!(VALID_TABS as readonly string[]).includes(currentPath)) {
       window.history.replaceState({ tab: activeTab }, '', `/${activeTab}`);
     }
 

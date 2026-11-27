@@ -1,0 +1,13 @@
+/* src/components/finance/ReconcileTab.css */
+.reconcile-record-card {
+  transition: box-shadow 0.2s ease;
+}
+
+.reconcile-record-card:hover {
+  box-shadow: 0 4px 14px -4px rgba(15, 23, 42, 0.08);
+}
+
+.reconcile-history-list {
+  max-height: 12rem;
+  overflow-y: auto;
+}

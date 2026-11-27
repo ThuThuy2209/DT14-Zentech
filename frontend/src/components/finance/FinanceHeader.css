@@ -1,0 +1,16 @@
+/* src/components/finance/FinanceHeader.css */
+.finance-header-card {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.finance-header-card:hover {
+  box-shadow: 0 6px 20px -6px rgba(15, 23, 42, 0.08);
+}
+
+.finance-tab-bar {
+  scrollbar-width: none;
+}
+
+.finance-tab-bar::-webkit-scrollbar {
+  display: none;
+}

@@ -1,0 +1,4 @@
+/* src/components/finance/ExpensesTab.css */
+.expenses-table-row:hover {
+  background-color: rgba(248, 250, 252, 0.85);
+}

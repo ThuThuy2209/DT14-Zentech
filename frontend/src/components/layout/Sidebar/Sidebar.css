@@ -1,0 +1,4 @@
+/* src/components/layout/Sidebar/Sidebar.css */
+.layout-sidebar {
+  transition: width 0.2s ease;
+}

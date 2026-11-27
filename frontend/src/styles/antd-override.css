@@ -1,0 +1,27 @@
+/* src/styles/antd-override.css */
+/* Ghi đè & chuẩn hóa style mặc định cho Ant Design (antd) và các thư viện UI bên ngoài */
+
+.ant-btn {
+  border-radius: 0.75rem;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.ant-input,
+.ant-select-selector,
+.ant-picker {
+  border-radius: 0.75rem !important;
+}
+
+.ant-modal-content {
+  border-radius: 1rem !important;
+  overflow: hidden;
+}
+
+.ant-table-thead > tr > th {
+  background-color: #f8fafc !important;
+  color: #64748b !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+}

@@ -1,0 +1,8 @@
+/* src/components/finance/DebtTab.css */
+.debt-row-overdue {
+  background-color: rgba(255, 241, 242, 0.2);
+}
+
+.debt-email-preview {
+  line-height: 1.65;
+}
