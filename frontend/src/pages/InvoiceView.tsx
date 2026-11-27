@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Upload, ChevronLeft, ChevronRight, ZoomIn, ZoomOut,
   RefreshCw, Download, AlertTriangle, CheckCircle2,
-  Sparkles, X, Edit3, CheckSquare, ScanLine, Layers,
+  Sparkles, X, Edit3, CheckSquare, ScanLine,
   Mail, AlertCircle
 } from 'lucide-react';
 import {
@@ -31,31 +31,357 @@ const formatDate = (dateStr: string) => {
 };
 
 // =============================================
+// DỮ LIỆU CHUẨN 25 HÓA ĐƠN MUA VÀO THEO ĐẶC TẢ ĐỀ TÀI DT14
+// =============================================
+interface OfficialInvoiceData {
+  itemName: string;
+  unit: string;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+  taxAmount: number;
+  totalAmount: number;
+  sellerAddress: string;
+  bankAccount: string;
+}
+
+export const OFFICIAL_25_INVOICES: Record<string, OfficialInvoiceData> = {
+  '000001': {
+    itemName: 'Thiết kế website doanh nghiệp',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 8000000,
+    subtotal: 8000000,
+    taxAmount: 800000,
+    totalAmount: 8800000,
+    sellerAddress: '15 Nguyễn Trãi, P. Bến Thành, TP.HCM',
+    bankAccount: '190099000001 – BIDV (giả lập)',
+  },
+  '000002': {
+    itemName: 'Phát triển phần mềm quản lý',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 15000000,
+    subtotal: 15000000,
+    taxAmount: 1500000,
+    totalAmount: 16500000,
+    sellerAddress: '28 Điện Biên Phủ, P. Gia Định, TP.HCM',
+    bankAccount: '190099000002 – BIDV (giả lập)',
+  },
+  '000003': {
+    itemName: 'Thiết kế website bán hàng',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 9500000,
+    subtotal: 9500000,
+    taxAmount: 950000,
+    totalAmount: 10450000,
+    sellerAddress: '45 Lê Văn Sỹ, P. Nhiêu Lộc, TP.HCM',
+    bankAccount: '190099000003 – BIDV (giả lập)',
+  },
+  '000004': {
+    itemName: 'Bảo trì hệ thống phần mềm',
+    unit: 'Tháng',
+    quantity: 3,
+    unitPrice: 2000000,
+    subtotal: 6000000,
+    taxAmount: 600000,
+    totalAmount: 6600000,
+    sellerAddress: '62 Cách Mạng Tháng 8, P. Xuân Hòa, TP.HCM',
+    bankAccount: '190099000004 – BIDV (giả lập)',
+  },
+  '000005': {
+    itemName: 'Phần mềm quản lý nhân sự',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 12000000,
+    subtotal: 12000000,
+    taxAmount: 1200000,
+    totalAmount: 13200000,
+    sellerAddress: '80 Võ Thị Sáu, P. Xuân Hòa, TP.HCM',
+    bankAccount: '190099000005 – BIDV (giả lập)',
+  },
+  '000006': {
+    itemName: 'Thiết kế hệ thống học trực tuyến',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 18000000,
+    subtotal: 18000000,
+    taxAmount: 1800000,
+    totalAmount: 19800000,
+    sellerAddress: '19 Nguyễn Văn Cừ, P. Chợ Quán, TP.HCM',
+    bankAccount: '190099000006 – BIDV (giả lập)',
+  },
+  '000007': {
+    itemName: 'Phần mềm quản lý kho',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 11000000,
+    subtotal: 11000000,
+    taxAmount: 1100000,
+    totalAmount: 12100000,
+    sellerAddress: '120 Võ Văn Kiệt, P. Cầu Ông Lãnh, TP.HCM',
+    bankAccount: '190099000007 – BIDV (giả lập)',
+  },
+  '000008': {
+    itemName: 'Dịch vụ lưu trữ dữ liệu',
+    unit: 'Tháng',
+    quantity: 6,
+    unitPrice: 1000000,
+    subtotal: 6000000,
+    taxAmount: 600000,
+    totalAmount: 6600000,
+    sellerAddress: '32 Nguyễn Oanh, P. Gò Vấp, TP.HCM',
+    bankAccount: '190099000008 – BIDV (giả lập)',
+  },
+  '000009': {
+    itemName: 'Phần mềm quản lý công trình',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 14000000,
+    subtotal: 14000000,
+    taxAmount: 1400000,
+    totalAmount: 15400000,
+    sellerAddress: '55 Phan Văn Trị, P. Bình Thạnh, TP.HCM',
+    bankAccount: '190099000009 – BIDV (giả lập)',
+  },
+  '000010': {
+    itemName: 'Thiết kế landing page',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 5000000,
+    subtotal: 5000000,
+    taxAmount: 500000,
+    totalAmount: 5500000,
+    sellerAddress: '76 Hoàng Văn Thụ, P. Đức Nhuận, TP.HCM',
+    bankAccount: '190099000010 – BIDV (giả lập)',
+  },
+  '000011': {
+    itemName: 'Cài đặt hệ thống máy chủ',
+    unit: 'Lần',
+    quantity: 1,
+    unitPrice: 4500000,
+    subtotal: 4500000,
+    taxAmount: 450000,
+    totalAmount: 4950000,
+    sellerAddress: '91 Tô Hiến Thành, P. Diên Hồng, TP.HCM',
+    bankAccount: '190099000011 – BIDV (giả lập)',
+  },
+  '000012': {
+    itemName: 'Phần mềm quản lý bán hàng',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 10000000,
+    subtotal: 10000000,
+    taxAmount: 1000000,
+    totalAmount: 11000000,
+    sellerAddress: '14 Nguyễn Ảnh Thủ, P. Trung Mỹ Tây, TP.HCM',
+    bankAccount: '190099000012 – BIDV (giả lập)',
+  },
+  '000013': {
+    itemName: 'Thiết kế cơ sở dữ liệu',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 7000000,
+    subtotal: 7000000,
+    taxAmount: 700000,
+    totalAmount: 7700000,
+    sellerAddress: '27 Lý Thường Kiệt, P. Diên Hồng, TP.HCM',
+    bankAccount: '190099000013 – BIDV (giả lập)',
+  },
+  '000014': {
+    itemName: 'Website đặt tour du lịch',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 13000000,
+    subtotal: 13000000,
+    taxAmount: 1300000,
+    totalAmount: 14300000,
+    sellerAddress: '36 Nguyễn Thị Minh Khai, P. Sài Gòn, TP.HCM',
+    bankAccount: '190099000014 – BIDV (giả lập)',
+  },
+  '000015': {
+    itemName: 'Phần mềm quản lý thiết bị',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 9000000,
+    subtotal: 9000000,
+    taxAmount: 900000,
+    totalAmount: 9900000,
+    sellerAddress: '105 Cộng Hòa, P. Tân Bình, TP.HCM',
+    bankAccount: '190099000015 – BIDV (giả lập)',
+  },
+  '000016': {
+    itemName: 'Website thương mại điện tử',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 16000000,
+    subtotal: 16000000,
+    taxAmount: 1600000,
+    totalAmount: 17600000,
+    sellerAddress: '22 Nguyễn Huệ, P. Sài Gòn, TP.HCM',
+    bankAccount: '190099000016 – BIDV (giả lập)',
+  },
+  '000017': {
+    itemName: 'Phần mềm quản lý đơn hàng',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 8500000,
+    subtotal: 8500000,
+    taxAmount: 850000,
+    totalAmount: 9350000,
+    sellerAddress: '18 Trường Chinh, P. Tân Sơn, TP.HCM',
+    bankAccount: '190099000017 – BIDV (giả lập)',
+  },
+  '000018': {
+    itemName: 'Phần mềm quản lý sản xuất',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 11500000,
+    subtotal: 11500000,
+    taxAmount: 1150000,
+    totalAmount: 12650000,
+    sellerAddress: '49 Lạc Long Quân, P. Tân Hòa, TP.HCM',
+    bankAccount: '190099000018 – BIDV (giả lập)',
+  },
+  '000019': {
+    itemName: 'Dịch vụ bảo trì máy chủ',
+    unit: 'Tháng',
+    quantity: 2,
+    unitPrice: 2500000,
+    subtotal: 5000000,
+    taxAmount: 500000,
+    totalAmount: 5500000,
+    sellerAddress: '67 Phạm Văn Đồng, P. Hiệp Bình, TP.HCM',
+    bankAccount: '190099000019 – BIDV (giả lập)',
+  },
+  '000020': {
+    itemName: 'Phần mềm quản lý khách hàng',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 17000000,
+    subtotal: 17000000,
+    taxAmount: 1700000,
+    totalAmount: 18700000,
+    sellerAddress: '88 Nguyễn Văn Linh, P. Tân Mỹ, TP.HCM',
+    bankAccount: '190099000020 – BIDV (giả lập)',
+  },
+  '000021': {
+    itemName: 'Thiết kế website giới thiệu',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 6000000,
+    subtotal: 6000000,
+    taxAmount: 600000,
+    totalAmount: 6600000,
+    sellerAddress: '31 Nguyễn Thị Thập, P. Tân Hưng, TP.HCM',
+    bankAccount: '190099000021 – BIDV (giả lập)',
+  },
+  '000022': {
+    itemName: 'Tư vấn chuyển đổi số',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 20000000,
+    subtotal: 20000000,
+    taxAmount: 2000000,
+    totalAmount: 22000000,
+    sellerAddress: '73 Nguyễn Văn Trỗi, P. Phú Nhuận, TP.HCM',
+    bankAccount: '190099000022 – BIDV (giả lập)',
+  },
+  '000023': {
+    itemName: 'Phần mềm quản lý tài chính',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 12500000,
+    subtotal: 12500000,
+    taxAmount: 1250000,
+    totalAmount: 13750000,
+    sellerAddress: '16 Bạch Đằng, P. Gia Định, TP.HCM',
+    bankAccount: '190099000023 – BIDV (giả lập)',
+  },
+  '000024': {
+    itemName: 'Thiết kế website doanh nghiệp',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 8000000,
+    subtotal: 8000000,
+    taxAmount: 800000,
+    totalAmount: 8800000,
+    sellerAddress: '15 Nguyễn Trãi, P. Bến Thành, TP.HCM',
+    bankAccount: '190099000001 – BIDV (giả lập)',
+  },
+  '000025': {
+    itemName: 'Phát triển phần mềm quản lý kho',
+    unit: 'Gói',
+    quantity: 1,
+    unitPrice: 9000000,
+    subtotal: 9000000,
+    taxAmount: 900000,
+    totalAmount: 9900000,
+    sellerAddress: '39 Nguyễn Văn Quá, P. Đông Hưng Thuận, TP.HCM',
+    bankAccount: '190099000025 – BIDV (giả lập)',
+  },
+};
+
+// =============================================
+// HELPER: Lấy thông tin hàng hóa, dịch vụ và thông tin người bán chuẩn xác
+// =============================================
+export const getInvoiceItemInfo = (inv: PurchaseInvoiceItem) => {
+  const numStr = String(inv.invoiceNumber || '').padStart(6, '0');
+  const matched = OFFICIAL_25_INVOICES[numStr] || OFFICIAL_25_INVOICES[inv.invoiceNumber];
+  
+  if (matched) {
+    return {
+      name: matched.itemName,
+      unit: matched.unit,
+      qty: matched.quantity,
+      unitPrice: matched.unitPrice,
+      subtotal: matched.subtotal,
+      taxAmount: matched.taxAmount,
+      totalAmount: matched.totalAmount,
+      sellerAddress: matched.sellerAddress,
+      bankAccount: matched.bankAccount,
+    };
+  }
+
+  // Fallback nếu hóa đơn ngoài danh mục 25 mẫu
+  const total = Number(inv.totalAmount) || 0;
+  const beforeTax = Math.round(total / 1.1);
+  return {
+    name: 'Dịch vụ phát triển phần mềm',
+    unit: 'Gói',
+    qty: 1,
+    unitPrice: beforeTax,
+    subtotal: beforeTax,
+    taxAmount: total - beforeTax,
+    totalAmount: total,
+    sellerAddress: 'TP. Hồ Chí Minh',
+    bankAccount: '190099000001 – BIDV (giả lập)',
+  };
+};
+
+// =============================================
 // COMPONENT: Render hóa đơn điện tử bên trái (Split-View)
 // =============================================
 const InvoiceDocument: React.FC<{ inv: PurchaseInvoiceItem }> = ({ inv }) => {
   const isDuplicate = inv.duplicateStatus === 'DUPLICATE';
   const isTaxMismatched = inv.buyerTaxStatus === 'MISMATCHED';
-
-  // Tính ước lượng trước thuế và thuế GTGT 10%
-  const total = Number(inv.totalAmount) || 0;
-  const beforeTax = Math.round(total / 1.1);
-  const vat = total - beforeTax;
+  const itemInfo = getInvoiceItemInfo(inv);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-6 font-serif text-xs shadow-sm min-h-full">
+    <div className="bg-white border border-slate-200 rounded-xl p-6 font-sans text-xs shadow-sm min-h-full leading-normal">
       {/* Header hóa đơn */}
       <div className="flex items-start justify-between mb-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded bg-blue-700 flex items-center justify-center text-white font-black text-sm">MS</div>
+            <div className="w-9 h-9 rounded-lg bg-blue-700 flex items-center justify-center text-white font-extrabold text-sm shadow-xs">MS</div>
             <div>
-              <p className="font-bold text-blue-800 text-[11px] leading-tight">CÔNG TY TNHH MTV</p>
-              <p className="font-bold text-blue-800 text-[11px] leading-tight">MINH SOFTWARE</p>
+              <p className="font-bold text-blue-800 text-xs leading-tight">CÔNG TY TNHH MTV</p>
+              <p className="font-bold text-blue-800 text-xs leading-tight">MINH SOFTWARE</p>
             </div>
           </div>
         </div>
-        <div className="text-right text-[10px] text-slate-500 leading-relaxed">
+        <div className="text-right text-[11px] text-slate-500 leading-relaxed font-sans">
           <p>Mẫu số: <span className="font-semibold text-slate-800">01GTKT</span></p>
           <p>Ký hiệu: <span className="font-semibold text-slate-800">1C26TMS</span></p>
           <p>Số: <span className="font-bold text-blue-700">{inv.invoiceNumber}</span></p>
@@ -63,99 +389,107 @@ const InvoiceDocument: React.FC<{ inv: PurchaseInvoiceItem }> = ({ inv }) => {
       </div>
 
       <div className="text-center mb-4 border-t border-b border-slate-200 py-3">
-        <h2 className="font-bold text-sm text-slate-900 uppercase">HÓA ĐƠN GIÁ TRỊ GIA TĂNG</h2>
-        <p className="text-[10px] text-slate-500 mt-0.5">(Hóa đơn điện tử đầu vào)</p>
-        <p className="text-[10px] text-slate-600 mt-1">Ngày lập: {formatDate(inv.invoiceDate)}</p>
+        <h2 className="font-bold text-sm text-slate-900 uppercase tracking-wide">HÓA ĐƠN GIÁ TRỊ GIA TĂNG</h2>
+        <p className="text-xs text-slate-500 mt-0.5">(Hóa đơn điện tử đầu vào)</p>
+        <p className="text-xs text-slate-600 mt-1">Ngày lập: {formatDate(inv.invoiceDate)}</p>
       </div>
 
       {/* Thông tin đơn vị bán hàng (Nhà cung cấp) */}
-      <table className="w-full text-[10px] mb-3">
+      <table className="w-full text-xs mb-3 font-sans">
         <tbody>
           <tr>
-            <td className="text-slate-500 w-32 py-0.5">Đơn vị bán hàng:</td>
+            <td className="text-slate-500 w-32 py-1">Đơn vị bán hàng:</td>
             <td className="font-bold text-slate-900">{inv.supplierName}</td>
           </tr>
           <tr>
-            <td className="text-slate-500 py-0.5">Mã số thuế bán:</td>
-            <td className="font-semibold">{inv.sellerTaxCode || 'Chưa có MST'}</td>
+            <td className="text-slate-500 py-1">Mã số thuế bán:</td>
+            <td className="font-semibold text-slate-800">{inv.sellerTaxCode || 'Chưa có MST'}</td>
           </tr>
           <tr>
-            <td className="text-slate-500 py-0.5">Hình thức TT:</td>
-            <td>Chuyển khoản (TM/CK)</td>
+            <td className="text-slate-500 py-1">Địa chỉ người bán:</td>
+            <td className="text-slate-700">{itemInfo.sellerAddress}</td>
+          </tr>
+          <tr>
+            <td className="text-slate-500 py-1">Tài khoản ngân hàng:</td>
+            <td className="text-slate-700 font-mono text-[11px]">{itemInfo.bankAccount}</td>
+          </tr>
+          <tr>
+            <td className="text-slate-500 py-1">Hình thức TT:</td>
+            <td className="text-slate-700">Chuyển khoản (TM/CK)</td>
           </tr>
         </tbody>
       </table>
 
-      <div className="border-t border-dashed border-slate-200 my-2" />
+      <div className="border-t border-dashed border-slate-200 my-2.5" />
 
       {/* Thông tin đơn vị mua hàng (Minh Software) */}
-      <table className="w-full text-[10px] mb-3">
+      <table className="w-full text-xs mb-3 font-sans">
         <tbody>
           <tr>
-            <td className="text-slate-500 w-32 py-0.5">Đơn vị mua hàng:</td>
+            <td className="text-slate-500 w-32 py-1">Đơn vị mua hàng:</td>
             <td className={`font-bold ${isDuplicate ? 'text-rose-700' : 'text-slate-900'}`}>
               CÔNG TY TNHH MTV MINH SOFTWARE
             </td>
           </tr>
           <tr>
-            <td className="text-slate-500 py-0.5">Mã số thuế mua:</td>
-            <td className={`font-semibold ${isTaxMismatched ? 'text-rose-600 font-bold' : ''}`}>
+            <td className="text-slate-500 py-1">Mã số thuế mua:</td>
+            <td className={`font-semibold ${isTaxMismatched ? 'text-rose-600 font-bold' : 'text-slate-800'}`}>
               {inv.buyerTaxCode || '0319002001'}
-              {isTaxMismatched && <span className="ml-1 text-rose-500 text-[9px]">⚠ Không khớp 0319002001</span>}
+              {isTaxMismatched && <span className="ml-1.5 text-rose-500 text-[11px] font-bold">⚠ Không khớp 0319002001</span>}
             </td>
           </tr>
           <tr>
-            <td className="text-slate-500 py-0.5">Địa chỉ:</td>
-            <td>Số 2 Võ Oanh, P. Thạnh Mỹ Tây, TP.HCM</td>
+            <td className="text-slate-500 py-1">Địa chỉ:</td>
+            <td className="text-slate-700">Số 2 Võ Oanh, P. Thạnh Mỹ Tây, TP.HCM</td>
           </tr>
         </tbody>
       </table>
 
       {/* Bảng chi tiết hàng hóa, dịch vụ */}
-      <table className="w-full text-[9px] border border-slate-300 mb-3">
+      <table className="w-full text-xs border border-slate-300 mb-3 font-sans">
         <thead>
-          <tr className="bg-slate-50">
-            <th className="border border-slate-300 p-1 text-center">STT</th>
-            <th className="border border-slate-300 p-1 text-left">Tên hàng hóa, dịch vụ</th>
-            <th className="border border-slate-300 p-1 text-center">ĐVT</th>
-            <th className="border border-slate-300 p-1 text-center">SL</th>
-            <th className="border border-slate-300 p-1 text-right">Đơn giá</th>
-            <th className="border border-slate-300 p-1 text-right">Thành tiền</th>
+          <tr className="bg-slate-50 text-slate-700">
+            <th className="border border-slate-300 p-1.5 text-center font-bold">STT</th>
+            <th className="border border-slate-300 p-1.5 text-left font-bold">Tên hàng hóa, dịch vụ</th>
+            <th className="border border-slate-300 p-1.5 text-center font-bold">ĐVT</th>
+            <th className="border border-slate-300 p-1.5 text-center font-bold">SL</th>
+            <th className="border border-slate-300 p-1.5 text-right font-bold">Đơn giá</th>
+            <th className="border border-slate-300 p-1.5 text-right font-bold">Thành tiền</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td className="border border-slate-300 p-1 text-center">1</td>
-            <td className="border border-slate-300 p-1">Dịch vụ kỹ thuật phần mềm / Hạ tầng CNTT</td>
-            <td className="border border-slate-300 p-1 text-center">Gói</td>
-            <td className="border border-slate-300 p-1 text-center">1</td>
-            <td className="border border-slate-300 p-1 text-right">{beforeTax.toLocaleString('vi-VN')}</td>
-            <td className="border border-slate-300 p-1 text-right">{beforeTax.toLocaleString('vi-VN')}</td>
+          <tr className="text-slate-800">
+            <td className="border border-slate-300 p-1.5 text-center">1</td>
+            <td className="border border-slate-300 p-1.5 font-medium">{itemInfo.name}</td>
+            <td className="border border-slate-300 p-1.5 text-center">{itemInfo.unit}</td>
+            <td className="border border-slate-300 p-1.5 text-center">{itemInfo.qty}</td>
+            <td className="border border-slate-300 p-1.5 text-right">{itemInfo.unitPrice.toLocaleString('vi-VN')}</td>
+            <td className="border border-slate-300 p-1.5 text-right font-semibold">{itemInfo.subtotal.toLocaleString('vi-VN')}</td>
           </tr>
         </tbody>
       </table>
 
       {/* Tổng cộng tài chính */}
-      <div className="text-[10px] text-right space-y-1 mb-3">
+      <div className="text-xs text-right space-y-1.5 mb-3 font-sans">
         <div className="flex justify-between">
           <span className="text-slate-500">Cộng tiền hàng (chưa có thuế GTGT):</span>
-          <span className="font-semibold">{formatVND(beforeTax)}</span>
+          <span className="font-semibold text-slate-800">{formatVND(itemInfo.subtotal)}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-slate-500">Thuế suất GTGT 10% | Tiền thuế GTGT:</span>
-          <span className="font-semibold">{formatVND(vat)}</span>
+          <span className="font-semibold text-slate-800">{formatVND(itemInfo.taxAmount)}</span>
         </div>
-        <div className="flex justify-between font-bold text-blue-700 text-xs border-t border-slate-200 pt-1">
+        <div className="flex justify-between font-bold text-blue-700 text-sm border-t border-slate-200 pt-2">
           <span>Tổng cộng tiền thanh toán:</span>
-          <span>{formatVND(total)}</span>
+          <span>{formatVND(itemInfo.totalAmount)}</span>
         </div>
       </div>
 
       {/* Chữ ký điện tử */}
-      <div className="mt-4 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[9px] text-emerald-700">
-        <p className="font-bold">✓ KÝ BỞI: {inv.supplierName.toUpperCase()}</p>
-        <p>Chứng thư số điện tử hợp chuẩn Tổng cục Thuế</p>
-        <p>Thời gian ký: {formatDate(inv.invoiceDate)} 09:15:00 GMT+7</p>
+      <div className="mt-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 font-sans">
+        <p className="font-bold text-emerald-900">✓ KÝ BỞI: {inv.supplierName.toUpperCase()}</p>
+        <p className="text-[11px] text-emerald-700 mt-0.5">Chứng thư số điện tử hợp chuẩn Tổng cục Thuế</p>
+        <p className="text-[11px] text-emerald-700">Thời gian ký: {formatDate(inv.invoiceDate)} 09:15:00 GMT+7</p>
       </div>
     </div>
   );
@@ -276,6 +610,20 @@ const InvoiceExtracted: React.FC<{
           </div>
           <div className="px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-900">
             {inv.supplierName}
+          </div>
+        </div>
+
+        {/* Tên hàng hóa, dịch vụ bóc tách OCR */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Hàng hóa, dịch vụ bóc tách</label>
+            <span className="text-[9px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded flex items-center gap-1">
+              <Sparkles className="w-2.5 h-2.5" />
+              Bóc tách OCR
+            </span>
+          </div>
+          <div className="px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-900">
+            {getInvoiceItemInfo(inv).name}
           </div>
         </div>
 
