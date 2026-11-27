@@ -6,9 +6,10 @@ import { MobileBottomNav } from '../components/mobile/MobileBottomNav';
 
 interface AppLayoutProps {
   children: (props: { activeTab: string; setActiveTab: (tab: string) => void }) => React.ReactNode;
+  onLogout?: () => void;
 }
 
-export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+export const AppLayout: React.FC<AppLayoutProps> = ({ children, onLogout }) => {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
 
@@ -19,6 +20,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         onOpenProfile={() => setActiveTab('profile')}
+        onLogout={onLogout}
       />
 
       {/* Vùng nội dung chính */}

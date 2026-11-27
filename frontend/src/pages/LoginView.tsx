@@ -52,33 +52,27 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-6 text-xs">
-          <div className="flex items-center gap-2 text-slate-600">
+        <div className="flex items-center gap-6 text-xs text-slate-500">
+          <div className="hidden sm:flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Máy chủ Cục Thuế & eTax: <strong className="text-emerald-700 font-semibold">Sẵn sàng</strong></span>
+            <span>Máy chủ Cục Thuế & eTax: <strong className="text-slate-700">Sẵn sàng</strong></span>
           </div>
-          <a 
-            href="#support" 
-            onClick={(e) => e.preventDefault()}
-            className="text-slate-500 hover:text-blue-600 transition-colors hidden sm:inline-block"
-          >
+          <a href="#support" onClick={(e) => e.preventDefault()} className="hover:text-blue-600 transition-colors">
             Hỗ trợ kỹ thuật
           </a>
         </div>
       </header>
 
-      {/* 2. Khối Card đăng nhập chính giữa */}
+      {/* 2. Thân trang: Form Đăng nhập */}
       <main className="flex-1 flex items-center justify-center my-8">
-        <div className="w-full max-w-[460px] bg-white border border-slate-200/80 rounded-3xl p-8 sm:p-10 shadow-xl shadow-slate-200/60 transition-all">
+        <div className="w-full max-w-md bg-white/80 backdrop-blur-md p-8 sm:p-10 rounded-3xl border border-slate-200/80 shadow-2xl shadow-blue-500/5 transition-all">
           
-          {/* Icon khóa */}
-          <div className="flex justify-center mb-5">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center shadow-inner">
-              <Lock className="w-5 h-5 stroke-[2.2]" />
-            </div>
+          {/* Logo / Biểu tượng ổ khóa */}
+          <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-blue-100/50">
+            <Lock className="w-6 h-6 stroke-[2.2]" />
           </div>
 
-          {/* Tiêu đề */}
+          {/* Tiêu đề & Mô tả */}
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-2">
               Đăng nhập OPC SmartOffice
@@ -88,7 +82,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
             </p>
           </div>
 
-                    {/* Thông báo lỗi nếu đăng nhập thất bại */}
+          {/* Thông báo lỗi nếu đăng nhập thất bại */}
           {errorMessage && (
             <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2.5 text-xs text-rose-700 animate-in fade-in">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
@@ -100,25 +94,25 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-                      {/* Trường Tên đăng nhập hoặc Email */}
-          <div>
-            <label className="block text-[11px] font-bold tracking-wider text-slate-600 uppercase mb-2">
-              TÊN ĐĂNG NHẬP HOẶC EMAIL
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <AtSign className="w-4 h-4" />
+            {/* Trường Tên đăng nhập hoặc Email */}
+            <div>
+              <label className="block text-[11px] font-bold tracking-wider text-slate-600 uppercase mb-2">
+                TÊN ĐĂNG NHẬP HOẶC EMAIL
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <AtSign className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin hoặc ketoan@minhsoftware.example"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-sm text-slate-800 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+                />
               </div>
-              <input
-                type="text"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin hoặc ketoan@minhsoftware.example"
-                className="w-full pl-10 pr-4 py-3 bg-slate-50/50 hover:bg-slate-50 focus:bg-white text-sm text-slate-800 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
-              />
             </div>
-          </div>
 
             {/* Trường Mật khẩu */}
             <div>
@@ -147,8 +141,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
               </div>
             </div>
 
-            {/* Ghi nhớ & Quên mật khẩu */}
-            <div className="flex items-center justify-between text-xs pt-1">
+            {/* Ghi nhớ đăng nhập */}
+            <div className="flex items-center text-xs pt-1">
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -158,13 +152,6 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
                 />
                 <span className="text-slate-600 font-medium">Ghi nhớ đăng nhập trên thiết bị này</span>
               </label>
-              <a 
-                href="#forgot" 
-                onClick={(e) => e.preventDefault()}
-                className="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-all"
-              >
-                Quên mật khẩu?
-              </a>
             </div>
 
             {/* Nút đăng nhập */}

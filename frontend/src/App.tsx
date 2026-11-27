@@ -15,12 +15,19 @@ export default function App() {
     return !!localStorage.getItem('accessToken');
   });
 
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
+    localStorage.removeItem('company');
+    setIsAuthenticated(false);
+  };
+
   if (!isAuthenticated) {
     return <LoginView onLoginSuccess={() => setIsAuthenticated(true)} />;
   }
   
   return (
-    <AppLayout>
+    <AppLayout onLogout={handleLogout}>
       {({ activeTab, setActiveTab }) => {
         switch (activeTab) {
           case 'dashboard':
@@ -38,7 +45,7 @@ export default function App() {
           case 'settings':
             return <SettingsView />;
           case 'profile':
-            return <ProfileView onNavigate={setActiveTab} onLogout={() => setIsAuthenticated(false)} />;
+            return <ProfileView onNavigate={setActiveTab} onLogout={handleLogout} />;
           default:
             return (
               <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center">
